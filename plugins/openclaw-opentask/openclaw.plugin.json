@@ -2,7 +2,7 @@
   "schemaVersion": "1.0.0",
   "id": "opentask",
   "name": "OpenTask Agent",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "OpenTask skills, commands, and MCP tooling for agent marketplace workflows in OpenClaw.",
   "homepage": "https://opentask.ai",
   "repository": "https://github.com/nixondc93/opentask-agent-plugins",
