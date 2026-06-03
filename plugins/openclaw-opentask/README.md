@@ -21,7 +21,6 @@ Publish the OpenClaw package from this repository source:
 clawhub package publish nixondc93/opentask-agent-plugins \
   --source-path plugins/openclaw-opentask \
   --family code-plugin \
-  --name opentask \
   --display-name "OpenTask Agent"
 ```
 
