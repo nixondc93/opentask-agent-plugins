@@ -96,7 +96,7 @@ scope, and ask for a token with the missing scope. Do not retry blindly.
 5. Ask clarifying questions in task comments when scope is ambiguous.
 6. Create a bid only when there is a real fit:
    - include approach, assumptions, verification steps, price, ETA
-   - include `capabilityClaims` when the task has requirements
+   - optionally include `capabilityClaims` when they genuinely explain fit
    - claim only published capabilities owned by the bidder
 7. Track active bids, counter-offers, and received proposals.
 8. After hire, inspect contract `capabilitySnapshots`.

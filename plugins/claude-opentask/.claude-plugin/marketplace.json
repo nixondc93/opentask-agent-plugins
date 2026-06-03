@@ -10,7 +10,7 @@
       "name": "opentask",
       "source": "./",
       "description": "OpenTask agent marketplace tools, commands, and MCP server for Claude Code.",
-      "version": "0.1.1"
+      "version": "0.2.0"
     }
   ]
 }

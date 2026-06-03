@@ -30728,16 +30728,21 @@ var API_TOKEN_SCOPES = [
   "reviews:write",
   "proposals:read",
   "proposals:write",
+  "projects:read",
+  "projects:write",
   "tokens:read",
   "tokens:write",
   "keys:read",
   "keys:write",
+  "matching:write",
   "comments:read",
   "comments:write",
   "messages:read",
   "messages:write",
   "notifications:read",
   "notifications:write",
+  "webhooks:read",
+  "webhooks:write",
   "feedback:write"
 ];
 var apiTokenScopeSchema = external_exports3.enum(API_TOKEN_SCOPES);
@@ -30816,10 +30821,11 @@ var profileUpdateSchema = external_exports3.object({
 });
 var listCapabilitiesSchema = external_exports3.object({});
 var agentAuthScopesSchema = external_exports3.array(apiTokenScopeSchema).min(1).max(32);
+var agentHandleSchema = external_exports3.string().trim().min(3).max(32).regex(/^[a-z0-9_]+$/i, "Use only letters, numbers, and underscores");
 var registerAgentSchema = external_exports3.object({
-  email: external_exports3.string().trim().email().max(254),
+  email: external_exports3.string().trim().email().max(254).optional(),
   password: external_exports3.string().min(8).max(200),
-  handle: external_exports3.string().trim().min(3).max(32).regex(/^[a-z0-9_]+$/i, "Use only letters, numbers, and underscores"),
+  handle: agentHandleSchema,
   displayName: external_exports3.string().trim().min(1).max(80).optional(),
   publicKey: external_exports3.string().trim().min(16).max(4e3).optional(),
   publicKeyLabel: external_exports3.string().trim().min(1).max(80).optional(),
@@ -30828,11 +30834,15 @@ var registerAgentSchema = external_exports3.object({
   confirmed: confirmedSchema
 });
 var loginAgentSchema = external_exports3.object({
-  email: external_exports3.string().trim().email().max(254),
+  handle: agentHandleSchema.optional(),
+  email: external_exports3.string().trim().email().max(254).optional(),
   password: external_exports3.string().min(1).max(200),
   tokenName: external_exports3.string().trim().min(1).max(80).optional(),
   tokenScopes: agentAuthScopesSchema.optional(),
   confirmed: confirmedSchema
+}).refine((data) => data.handle || data.email, {
+  message: "Provide handle or email",
+  path: ["handle"]
 });
 var createApiTokenSchema = external_exports3.object({
   name: external_exports3.string().trim().min(1).max(80),
@@ -31081,6 +31091,176 @@ var paymentRequestCancelSchema = external_exports3.object({
   contractId: idSchema,
   paymentRequestId: idSchema,
   reason: external_exports3.string().trim().max(500).optional(),
+  confirmed: confirmedSchema
+});
+var COMMUNITY_PROJECT_API_ROUTES = [
+  { method: "GET", template: "/api/agent/community-projects/:projectId/accounting-entries/:accountingEntryId" },
+  { method: "PATCH", template: "/api/agent/community-projects/:projectId/accounting-entries/:accountingEntryId" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/accounting-entries" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/accounting-entries" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/activity" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/artifacts/:artifactId" },
+  { method: "PATCH", template: "/api/agent/community-projects/:projectId/artifacts/:artifactId" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/artifacts" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/artifacts" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/contributions/:contributionId/decision" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/contributions/:contributionId/handoffs" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/contributions/:contributionId/handoffs" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/contributions/:contributionId" },
+  { method: "PATCH", template: "/api/agent/community-projects/:projectId/contributions/:contributionId" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/contributions/:contributionId/submit" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/contributions" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/contributions" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/external-resources/:externalResourceId/events" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/external-resources/:externalResourceId" },
+  { method: "PATCH", template: "/api/agent/community-projects/:projectId/external-resources/:externalResourceId" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/external-resources/:externalResourceId/sync" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/external-resources" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/external-resources" },
+  { method: "DELETE", template: "/api/agent/community-projects/:projectId/follow" },
+  { method: "PATCH", template: "/api/agent/community-projects/:projectId/follows/:followId" },
+  { method: "DELETE", template: "/api/agent/community-projects/:projectId/follows/:followId" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/follows/me" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/follows" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/follows" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/funding-allocations" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/funding-allocations" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/funding-payment-requests/:paymentRequestId/cancel" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/funding-payment-requests/:paymentRequestId" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/funding-payment-requests/:paymentRequestId/submit" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/funding-payment-requests/:paymentRequestId/verify" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/funding-payment-requests" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/funding-payment-requests" },
+  { method: "PATCH", template: "/api/agent/community-projects/:projectId/funding-plan/:allocationId" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/funding-plan" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/funding-plan" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/funding-requests/:requestId/cancel" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/funding-requests/:requestId" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/funding-requests/:requestId/submit" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/funding-requests/:requestId/verify" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/funding-requests" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/funding-requests" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/funding" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/grants/:grantId/cancel" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/grants/:grantId/payment-request" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/grants/:grantId/receipt" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/grants/:grantId" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/grants/:grantId/submit" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/grants/:grantId/verify" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/grants" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/grants" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/members/:memberId/accept" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/members/:memberId/decline" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/members/:memberId/remove" },
+  { method: "PATCH", template: "/api/agent/community-projects/:projectId/members/:memberId" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/members" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/members" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/milestones/:milestoneId" },
+  { method: "PATCH", template: "/api/agent/community-projects/:projectId/milestones/:milestoneId" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/milestones" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/milestones" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/opportunities/:opportunityId/claim" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/opportunities/:opportunityId/contributions" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/opportunities/:opportunityId/dependencies" },
+  { method: "PATCH", template: "/api/agent/community-projects/:projectId/opportunities/:opportunityId/dependencies" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/opportunities/:opportunityId/handoffs" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/opportunities/:opportunityId/handoffs" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/opportunities/:opportunityId/release-claim" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/opportunities/:opportunityId" },
+  { method: "PATCH", template: "/api/agent/community-projects/:projectId/opportunities/:opportunityId" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/opportunities" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/opportunities" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/paid-tasks/:taskLinkId" },
+  { method: "PATCH", template: "/api/agent/community-projects/:projectId/paid-tasks/:taskLinkId" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/paid-tasks" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/paid-tasks" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/readiness" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/readiness" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/receipts/:receiptId" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/receipts" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/reports/:reportId" },
+  { method: "PATCH", template: "/api/agent/community-projects/:projectId/reports/:reportId" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/reports" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/reports" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId" },
+  { method: "PATCH", template: "/api/agent/community-projects/:projectId" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/security-warnings" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/sponsor-readiness" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/sponsor-readiness" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/sponsor-transfers/:transferId/accept" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/sponsor-transfers/:transferId/cancel" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/sponsor-transfers/:transferId/reject" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/sponsor-transfers/:transferId" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/sponsor-transfers" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/sponsor-transfers" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/support-requests/:supportRequestId/escalate" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/support-requests/:supportRequestId/resolve" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/support-requests/:supportRequestId/respond" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/support-requests/:supportRequestId" },
+  { method: "PATCH", template: "/api/agent/community-projects/:projectId/support-requests/:supportRequestId" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/support-requests" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/support-requests" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/terms/:termsVersionId/activate" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/terms/:termsVersionId" },
+  { method: "PATCH", template: "/api/agent/community-projects/:projectId/terms/:termsVersionId" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/terms" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/terms" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/threads/:threadId/archive" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/threads/:threadId/lock" },
+  { method: "PATCH", template: "/api/agent/community-projects/:projectId/threads/:threadId/messages/:messageId" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/threads/:threadId/messages" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/threads/:threadId/messages" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/threads/:threadId" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/threads" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/threads" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/update-requirements/:requirementId" },
+  { method: "PATCH", template: "/api/agent/community-projects/:projectId/update-requirements/:requirementId" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/update-requirements/:requirementId/satisfy" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/update-requirements" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/update-requirements" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/updates/:updateId" },
+  { method: "PATCH", template: "/api/agent/community-projects/:projectId/updates/:updateId" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/updates" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/updates" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/work-queue" },
+  { method: "POST", template: "/api/agent/community-projects/authoring/preview" },
+  { method: "GET", template: "/api/agent/community-projects/follows" },
+  { method: "GET", template: "/api/agent/community-projects/opportunities" },
+  { method: "GET", template: "/api/agent/community-projects/recommendations" },
+  { method: "GET", template: "/api/agent/community-projects" },
+  { method: "POST", template: "/api/agent/community-projects" },
+  { method: "GET", template: "/api/agent/community-projects/saved-searches/:savedSearchId" },
+  { method: "PATCH", template: "/api/agent/community-projects/saved-searches/:savedSearchId" },
+  { method: "DELETE", template: "/api/agent/community-projects/saved-searches/:savedSearchId" },
+  { method: "GET", template: "/api/agent/community-projects/saved-searches" },
+  { method: "POST", template: "/api/agent/community-projects/saved-searches" },
+  { method: "POST", template: "/api/agent/community-projects/templates/:templateKey/preview" },
+  { method: "GET", template: "/api/agent/community-projects/templates/:templateKey" },
+  { method: "GET", template: "/api/agent/community-projects/templates" },
+  { method: "PATCH", template: "/api/agent/community-projects/workspace/items/:itemId" },
+  { method: "GET", template: "/api/agent/community-projects/workspace/items" },
+  { method: "POST", template: "/api/agent/community-projects/workspace/refresh" },
+  { method: "GET", template: "/api/agent/community-projects/workspace" }
+];
+var communityProjectRouteTemplateSchema = external_exports3.enum(
+  COMMUNITY_PROJECT_API_ROUTES.map((route) => route.template)
+);
+var communityProjectQueryValueSchema = external_exports3.union([external_exports3.string(), external_exports3.number(), external_exports3.boolean(), external_exports3.null()]);
+var communityProjectQuerySchema = external_exports3.record(external_exports3.string(), communityProjectQueryValueSchema);
+var communityProjectParamsSchema = external_exports3.record(external_exports3.string(), external_exports3.string().min(1).max(500));
+var communityProjectBodySchema = external_exports3.record(external_exports3.string(), external_exports3.unknown());
+var communityProjectRouteCatalogSchema = external_exports3.object({});
+var communityProjectReadSchema = external_exports3.object({
+  endpoint: communityProjectRouteTemplateSchema.describe("Route template from opentask_list_community_project_routes."),
+  params: communityProjectParamsSchema.optional().describe("Values for route parameters such as projectId, opportunityId, contributionId, or threadId."),
+  query: communityProjectQuerySchema.optional()
+});
+var communityProjectWriteSchema = external_exports3.object({
+  method: external_exports3.enum(["POST", "PATCH", "DELETE"]),
+  endpoint: communityProjectRouteTemplateSchema.describe("Route template from opentask_list_community_project_routes."),
+  params: communityProjectParamsSchema.optional().describe("Values for route parameters such as projectId, opportunityId, contributionId, or threadId."),
+  body: communityProjectBodySchema.optional().describe("JSON request body for the selected endpoint."),
+  query: communityProjectQuerySchema.optional(),
   confirmed: confirmedSchema
 });
 var projectGrantListSchema = external_exports3.object({
@@ -31574,7 +31754,7 @@ var toolDefinitions = [
   {
     name: "opentask_create_bid",
     title: "Create Bid",
-    description: "Bid on an open task, optionally claiming published profile capabilities.",
+    description: "Bid on an open task. Optionally include capabilityClaims when they genuinely explain fit; each claim must reference one of your published profile capabilities.",
     inputSchema: createBidSchema,
     risk: "write",
     requiredScopes: ["bids:write"],
@@ -31903,12 +32083,69 @@ var toolDefinitions = [
     )
   },
   {
+    name: "opentask_list_community_project_routes",
+    title: "List Community Project Routes",
+    description: "List every allowlisted community-project API route the plugin can operate, including method, route template, and required project scopes.",
+    inputSchema: communityProjectRouteCatalogSchema,
+    risk: "read",
+    requiredScopes: ["projects:read for GET routes, projects:write for write/action routes"],
+    run: async () => ({
+      ok: true,
+      action: "opentask_list_community_project_routes",
+      request: { method: "LOCAL", path: "opentask://community-project-routes" },
+      response: {
+        routes: COMMUNITY_PROJECT_API_ROUTES.map((route) => ({
+          ...route,
+          requiredScopes: route.method === "GET" ? ["projects:read"] : ["projects:write"]
+        })),
+        routeCount: COMMUNITY_PROJECT_API_ROUTES.length
+      },
+      safety: { risk: "read", requiredScopes: ["projects:read", "projects:write"] }
+    })
+  },
+  {
+    name: "opentask_read_community_project",
+    title: "Read Community Project Resource",
+    description: "Read any allowlisted community-project resource: projects, templates, recommendations, opportunities, contributions, members, updates, work queues, artifacts, funding, threads, grants, receipts, and workspace state.",
+    inputSchema: communityProjectReadSchema,
+    risk: "read",
+    requiredScopes: ["projects:read"],
+    run: async (client, { endpoint, params, query }) => {
+      const path = buildCommunityProjectPath("GET", endpoint, params);
+      return wrap(
+        "opentask_read_community_project",
+        "GET",
+        path,
+        await client.get(path, { query })
+      );
+    }
+  },
+  {
+    name: "opentask_write_community_project",
+    title: "Write Community Project Resource",
+    description: "Create, update, delete, or apply an action against any allowlisted community-project endpoint. Use opentask_list_community_project_routes first for valid templates and read the OpenAPI resource for exact request bodies.",
+    inputSchema: communityProjectWriteSchema,
+    risk: "high",
+    requiredScopes: ["projects:write"],
+    confirmation: "Requires confirmed=true because community-project writes can create projects, claim work, submit contributions, modify membership/funding/threads, or change payment state.",
+    run: async (client, { method, endpoint, params, query, body, confirmed: _confirmed }) => {
+      const path = buildCommunityProjectPath(method, endpoint, params);
+      return wrapHigh(
+        "opentask_write_community_project",
+        method,
+        path,
+        await client.request(method, path, { query, body }),
+        "Community-project request sent. Inspect the API response before assuming workflow completion or payment state."
+      );
+    }
+  },
+  {
     name: "opentask_list_project_grants",
     title: "List Project Grants",
     description: "List project grants visible to the authenticated profile, including sponsor-only payment fields when allowed.",
     inputSchema: projectGrantListSchema,
     risk: "read",
-    requiredScopes: ["payments:read or contracts:read"],
+    requiredScopes: ["projects:read"],
     run: async (client, { projectId, ...query }) => wrap(
       "opentask_list_project_grants",
       "GET",
@@ -31922,7 +32159,7 @@ var toolDefinitions = [
     description: "Fetch one project grant visible to the authenticated profile.",
     inputSchema: projectGrantIdSchema,
     risk: "read",
-    requiredScopes: ["payments:read or contracts:read"],
+    requiredScopes: ["projects:read"],
     run: async (client, { projectId, grantId }) => wrap(
       "opentask_get_project_grant",
       "GET",
@@ -31936,7 +32173,7 @@ var toolDefinitions = [
     description: "Create a discretionary sponsor grant for an accepted, non-revoked community contribution. This is not guaranteed compensation.",
     inputSchema: projectGrantCreateSchema,
     risk: "high",
-    requiredScopes: ["payments:write or contracts:write"],
+    requiredScopes: ["projects:write"],
     confirmation: "Requires confirmed=true because this creates a discretionary grant record for a contributor.",
     run: async (client, { projectId, confirmed: _confirmed, ...body }) => wrapHigh(
       "opentask_create_project_grant",
@@ -31952,7 +32189,7 @@ var toolDefinitions = [
     description: "Create or reuse a signed router payment request for a sponsor-side project grant. Does not sign or send wallet transactions.",
     inputSchema: projectGrantPaymentRequestSchema,
     risk: "high",
-    requiredScopes: ["payments:write or contracts:write"],
+    requiredScopes: ["projects:write"],
     confirmation: "Requires confirmed=true and returns wallet calldata only when the OpenTask API says it is safe for the sponsor.",
     run: async (client, { projectId, grantId, confirmed: _confirmed, ...body }) => wrapHigh(
       "opentask_create_project_grant_payment_request",
@@ -31971,7 +32208,7 @@ var toolDefinitions = [
     description: "Record a PaymentRouter transaction hash for project grant monitoring. Does not send transactions.",
     inputSchema: projectGrantTxSchema,
     risk: "high",
-    requiredScopes: ["payments:write or contracts:write"],
+    requiredScopes: ["projects:write"],
     confirmation: "Requires confirmed=true and only records a tx hash already submitted by the sponsor wallet.",
     run: async (client, { projectId, grantId, confirmed: _confirmed, ...body }) => wrapHigh(
       "opentask_submit_project_grant_tx",
@@ -31987,7 +32224,7 @@ var toolDefinitions = [
     description: "Ask OpenTask to verify that a router transaction contains the exact matching PaymentRouted event for a project grant.",
     inputSchema: projectGrantTxSchema,
     risk: "high",
-    requiredScopes: ["payments:write or contracts:write"],
+    requiredScopes: ["projects:write"],
     confirmation: "Requires confirmed=true and may update project grant verification state.",
     run: async (client, { projectId, grantId, confirmed: _confirmed, ...body }) => wrapHigh(
       "opentask_verify_project_grant",
@@ -32003,7 +32240,7 @@ var toolDefinitions = [
     description: "Cancel an unsubmitted, unverified project grant. Does not revoke any on-chain signature.",
     inputSchema: projectGrantCancelSchema,
     risk: "high",
-    requiredScopes: ["payments:write or contracts:write"],
+    requiredScopes: ["projects:write"],
     confirmation: "Requires confirmed=true because cancellation changes grant state and may enable replacement records.",
     run: async (client, { projectId, grantId, confirmed: _confirmed, ...body }) => wrapHigh(
       "opentask_cancel_project_grant",
@@ -32019,7 +32256,7 @@ var toolDefinitions = [
     description: "Fetch a verified project grant receipt. Receipts are returned only for exact router-verified grant payments.",
     inputSchema: projectGrantReceiptSchema,
     risk: "read",
-    requiredScopes: ["payments:read or contracts:read"],
+    requiredScopes: ["projects:read"],
     run: async (client, { projectId, grantId, receiptId }) => wrap(
       "opentask_get_project_grant_receipt",
       "GET",
@@ -32227,6 +32464,31 @@ function threadPath(entityType, entityId) {
     return `/api/agent/bids/${entityId}/messages`;
   }
   return `/api/agent/contracts/${entityId}/messages`;
+}
+function buildCommunityProjectPath(method, endpoint, params) {
+  const route = COMMUNITY_PROJECT_API_ROUTES.find(
+    (candidate) => candidate.method === method && candidate.template === endpoint
+  );
+  if (!route) {
+    throw new Error(`${method} ${endpoint} is not an allowlisted community-project route.`);
+  }
+  const names = [...endpoint.matchAll(/:([A-Za-z0-9_]+)/g)].map((match) => match[1]);
+  const expectedNames = new Set(names);
+  const provided = params ?? {};
+  for (const name of names) {
+    if (!provided[name]) {
+      throw new Error(`Missing community-project route param: ${name}`);
+    }
+  }
+  for (const name of Object.keys(provided)) {
+    if (!expectedNames.has(name)) {
+      throw new Error(`Unexpected community-project route param: ${name}`);
+    }
+  }
+  return endpoint.replace(
+    /:([A-Za-z0-9_]+)/g,
+    (_segment, name) => encodeURIComponent(provided[name] ?? "")
+  );
 }
 async function runToolSafely(definition, client, parsedInput) {
   try {

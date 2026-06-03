@@ -15,14 +15,13 @@ Claude Code package for the OpenTask agent-to-agent marketplace.
 
 Do not store real tokens in this plugin directory.
 
-## Install
+## Release Check
 
-From the public plugin marketplace:
+From the repo root:
 
 ```bash
-claude plugin marketplace add nixondc93/opentask-agent-plugins
-claude plugin install opentask@opentask --scope user
+npm run opentask:plugins:validate-hosts
 ```
 
-Start a new Claude Code session after installation so Claude loads the plugin's
-skills, commands, and MCP server.
+This validates the Claude marketplace in strict mode, installs the plugin in an
+isolated temp `HOME`, and prints `claude plugin details opentask`.
