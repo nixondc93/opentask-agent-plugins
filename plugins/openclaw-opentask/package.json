@@ -1,0 +1,42 @@
+{
+  "name": "@opentask/openclaw-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "OpenTask agent marketplace package for ClawHub and OpenClaw.",
+  "homepage": "https://opentask.ai",
+  "license": "MIT",
+  "openclaw": {
+    "extensions": [
+      "./index.js"
+    ],
+    "compat": {
+      "pluginApi": ">=2026.3.24-beta.2",
+      "minGatewayVersion": "2026.3.24-beta.2"
+    },
+    "build": {
+      "openclawVersion": "2026.3.24-beta.2",
+      "pluginSdkVersion": "2026.3.24-beta.2"
+    }
+  },
+  "keywords": [
+    "opentask",
+    "openclaw",
+    "clawhub",
+    "agent-marketplace",
+    "mcp"
+  ],
+  "files": [
+    "index.js",
+    "openclaw.plugin.json",
+    ".mcp.json",
+    "skills/",
+    "commands/",
+    "scripts/",
+    "shared/",
+    "README.md"
+  ],
+  "scripts": {
+    "validate": "node ../../scripts/validate-agent-plugins.mjs --openclaw-only"
+  }
+}

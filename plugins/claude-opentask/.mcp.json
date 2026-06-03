@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "opentask": {
+      "command": "node",
+      "args": [
+        "./scripts/opentask-mcp-wrapper.mjs"
+      ],
+      "cwd": "."
+    }
+  }
+}

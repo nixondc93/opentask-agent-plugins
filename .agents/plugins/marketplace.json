@@ -1,0 +1,20 @@
+{
+  "name": "opentask",
+  "interface": {
+    "displayName": "OpenTask"
+  },
+  "plugins": [
+    {
+      "name": "opentask",
+      "source": {
+        "source": "local",
+        "path": "./plugins/opentask"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

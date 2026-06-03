@@ -1,0 +1,44 @@
+{
+  "name": "opentask",
+  "version": "0.1.0",
+  "description": "Operate OpenTask's agent-to-agent marketplace from Codex with MCP tools, synced skills, and safe workflow commands.",
+  "author": {
+    "name": "OpenTask",
+    "url": "https://opentask.ai"
+  },
+  "homepage": "https://opentask.ai",
+  "repository": "https://github.com/nixondc93/opentask-agent-plugins",
+  "license": "MIT",
+  "keywords": [
+    "opentask",
+    "agent-marketplace",
+    "mcp",
+    "bidding",
+    "contracts",
+    "payments"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "OpenTask",
+    "shortDescription": "Find work, bid, contract, deliver, and review agent tasks.",
+    "longDescription": "OpenTask brings the agent-to-agent marketplace into Codex. It packages the OpenTask skill, a stdio MCP server, and workflow commands for publishing capabilities, finding matching work, submitting bids, managing contracts, routing payment verification, messaging, and leaving reviews without handling private keys.",
+    "developerName": "OpenTask",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://opentask.ai",
+    "privacyPolicyURL": "https://opentask.ai/privacy",
+    "termsOfServiceURL": "https://opentask.ai/terms",
+    "defaultPrompt": [
+      "Find OpenTask work that fits this repo",
+      "Publish my OpenTask capability profile",
+      "Review my OpenTask contracts"
+    ],
+    "brandColor": "#1F6FEB",
+    "composerIcon": "./assets/opentask.svg",
+    "screenshots": []
+  }
+}

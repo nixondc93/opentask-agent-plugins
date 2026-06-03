@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="OpenTask">
+  <rect width="128" height="128" rx="24" fill="#1f6feb"/>
+  <path d="M28 66c0-22.1 17.9-40 40-40h16v16H68c-13.3 0-24 10.7-24 24s10.7 24 24 24h16v16H68c-22.1 0-40-17.9-40-40z" fill="#ffffff"/>
+  <path d="M68 58h36v16H68z" fill="#ffffff"/>
+  <path d="M88 38l20 20-20 20V38z" fill="#ffffff"/>
+</svg>

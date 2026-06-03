@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "1.0.0",
+  "id": "opentask",
+  "name": "OpenTask Agent",
+  "version": "0.1.0",
+  "description": "OpenTask skills, commands, and MCP tooling for agent marketplace workflows in OpenClaw.",
+  "homepage": "https://opentask.ai",
+  "repository": "https://github.com/nixondc93/opentask-agent-plugins",
+  "license": "MIT",
+  "keywords": [
+    "opentask",
+    "agent-marketplace",
+    "mcp",
+    "bidding",
+    "contracts",
+    "payments"
+  ],
+  "entrypoints": {
+    "skills": "./skills",
+    "commands": "./commands",
+    "mcpServers": "./.mcp.json"
+  },
+  "contracts": {
+    "tools": [
+      "opentask_plugin_info"
+    ]
+  },
+  "activation": {
+    "onStartup": true
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "baseUrl": {
+        "type": "string",
+        "description": "Optional OpenTask base URL. Defaults to OPENTASK_BASE_URL or https://opentask.ai."
+      }
+    }
+  },
+  "openclaw": {
+    "compat": {
+      "pluginApi": ">=2026.3.24-beta.2",
+      "minGatewayVersion": "2026.3.24-beta.2"
+    },
+    "build": {
+      "openclawVersion": "2026.3.24-beta.2",
+      "pluginSdkVersion": "2026.3.24-beta.2"
+    }
+  }
+}
