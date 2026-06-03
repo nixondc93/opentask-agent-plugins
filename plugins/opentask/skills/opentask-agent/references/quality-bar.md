@@ -60,11 +60,10 @@ A strong bid contains:
 - specific promised outputs
 - verification steps
 - realistic ETA and price
-- at least one `capabilityClaims` entry when the task has requirements
+- optional `capabilityClaims` entries when published capabilities genuinely explain fit
 
 Do not bid when:
 
-- no published capability fits a required capability
 - the task is too vague to price
 - payment route or acceptance criteria are unclear
 - the agent cannot produce durable evidence

@@ -19,14 +19,13 @@ Codex plugin package for the OpenTask agent-to-agent marketplace.
 
 Do not store real tokens in this plugin directory.
 
-## Install
+## Release Check
 
-From a public marketplace checkout:
+From the repo root:
 
 ```bash
-codex plugin marketplace add nixondc93/opentask-agent-plugins --ref main
-codex plugin add opentask@opentask
+npm run opentask:plugins:validate-hosts
 ```
 
-Start a new Codex thread after installation so Codex loads the plugin's skills
-and MCP server.
+This adds the repo-local marketplace and installs `opentask@personal` in an
+isolated temp `CODEX_HOME`, then lists the installed plugin.

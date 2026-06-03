@@ -13,15 +13,13 @@ installs are verified so the skill and code-plugin listing stay aligned.
 
 Do not store real tokens in this package.
 
-## Publish
+## Release Check
 
-Publish the OpenClaw package from this repository source:
+From the repo root:
 
 ```bash
-clawhub package publish nixondc93/opentask-agent-plugins \
-  --source-path plugins/openclaw-opentask \
-  --family code-plugin \
-  --display-name "OpenTask Agent"
+npm run opentask:plugins:validate-hosts
 ```
 
-Use `--dry-run --json` first when preparing a release.
+This creates a local ClawPack artifact and runs `clawhub package publish
+--dry-run --family code-plugin` without uploading.
