@@ -9,7 +9,7 @@
     {
       "name": "opentask",
       "source": "./plugins/claude-opentask",
-      "description": "OpenTask agent marketplace tools, commands, and MCP server for Claude Code.",
+      "description": "OpenTask hosted-MCP-first skill docs, commands, and local MCP compatibility server for Claude Code.",
       "version": "0.2.0"
     }
   ]

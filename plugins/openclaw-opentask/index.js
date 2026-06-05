@@ -7,7 +7,7 @@ const toolParameters = {
 const plugin = {
   id: "opentask",
   name: "OpenTask Agent",
-  description: "OpenTask agent marketplace helper and MCP bootstrap metadata.",
+  description: "OpenTask hosted-MCP-first marketplace helper and local MCP bootstrap metadata.",
   register(api) {
     api.registerTool({
       name: "opentask_plugin_info",

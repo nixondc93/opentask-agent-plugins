@@ -30366,7 +30366,7 @@ var StdioServerTransport = class {
 var TOKEN_PATTERN = /\bot_[a-f0-9]{32,128}\b/gi;
 var AUTH_HEADER_PATTERN = /(authorization\s*[:=]\s*bearer\s+)[^\s"',}]+/gi;
 var ENV_TOKEN_PATTERN = /(OPENTASK_TOKEN\s*=\s*)[^\s"',}]+/gi;
-var SECRET_KEY_PATTERN = /^(authorization|cookie|password|token|tokenValue|apiToken|privateKey|seedPhrase|secret|clientSecret)$/i;
+var SECRET_KEY_PATTERN = /^(authorization|cookie|password|token|tokenValue|apiToken|privateKey|seedPhrase|secret|clientSecret|signingSecret)$/i;
 function redactText(value) {
   return value.replace(AUTH_HEADER_PATTERN, "$1[REDACTED]").replace(ENV_TOKEN_PATTERN, "$1[REDACTED]").replace(TOKEN_PATTERN, "[REDACTED_OPENTASK_TOKEN]");
 }
@@ -30436,12 +30436,13 @@ var OpenTaskClient = class {
   clientName;
   pluginHost;
   pluginVersion;
+  defaultHeaders;
   fetchImpl;
   constructor(options = {}) {
     this.baseUrl = normalizeBaseUrl(
       options.baseUrl ?? process.env.OPENTASK_BASE_URL ?? process.env.BASE_URL ?? "https://opentask.ai"
     );
-    this.token = options.token ?? process.env.OPENTASK_TOKEN;
+    this.token = options.token ?? (options.useEnvToken === false ? void 0 : process.env.OPENTASK_TOKEN);
     this.clientName = normalizeRequiredHeaderValue(
       options.clientName ?? process.env.OPENTASK_CLIENT_NAME ?? "opentask-mcp"
     );
@@ -30449,6 +30450,7 @@ var OpenTaskClient = class {
     this.pluginVersion = normalizeOptionalHeaderValue(
       options.pluginVersion ?? process.env.OPENTASK_PLUGIN_VERSION
     );
+    this.defaultHeaders = normalizeDefaultHeaders(options.defaultHeaders);
     this.fetchImpl = options.fetch ?? fetch.bind(globalThis);
   }
   async get(path, options = {}) {
@@ -30479,6 +30481,12 @@ var OpenTaskClient = class {
     if (this.pluginVersion) {
       headers.set("X-OpenTask-Plugin-Version", this.pluginVersion);
     }
+    for (const [key, value] of Object.entries(this.defaultHeaders)) {
+      headers.set(key, value);
+    }
+    for (const [key, value] of Object.entries(normalizeDefaultHeaders(options.headers))) {
+      headers.set(key, value);
+    }
     let response;
     try {
       response = await this.fetchImpl(url2, {
@@ -30493,8 +30501,9 @@ var OpenTaskClient = class {
     }
     const text = await response.text();
     const contentType = response.headers.get("content-type") ?? "";
-    const parsed = options.accept === "text" ? text : contentType.includes("application/json") ? parseJsonBody(text) : text;
-    if (!response.ok) {
+    const parsed = options.accept === "text" ? text : isJsonContentType(contentType) ? parseJsonBody(text) : text;
+    const statusAllowed = response.ok || (options.allowedStatuses ?? []).includes(response.status);
+    if (!statusAllowed) {
       throw new OpenTaskApiError({
         method,
         path,
@@ -30504,7 +30513,16 @@ var OpenTaskClient = class {
         responseBody: parsed
       });
     }
-    return options.redactResponse === false ? parsed : redactSecrets(parsed);
+    const body = options.redactResponse === false ? parsed : redactSecrets(parsed);
+    if (options.includeResponseMetadata) {
+      return {
+        status: response.status,
+        statusText: response.statusText,
+        headers: selectedResponseHeaders(response.headers, options.responseHeaders),
+        body
+      };
+    }
+    return body;
   }
   buildUrl(path, query) {
     const url2 = /^https?:\/\//i.test(path) ? new URL(path) : new URL(path.startsWith("/") ? path : `/${path}`, this.baseUrl);
@@ -30526,6 +30544,31 @@ function normalizeOptionalHeaderValue(value) {
   const normalized = value?.trim().slice(0, 64);
   if (!normalized || !HEADER_VALUE_PATTERN.test(normalized)) return void 0;
   return normalized;
+}
+function normalizeDefaultHeaders(headers) {
+  const normalized = {};
+  for (const [key, value] of Object.entries(headers ?? {})) {
+    const headerName = key.trim();
+    const headerValue = value?.trim();
+    if (!headerName || !headerValue) continue;
+    if (/[\r\n]/.test(headerName) || /[\r\n]/.test(headerValue)) continue;
+    normalized[headerName] = headerValue;
+  }
+  return normalized;
+}
+function selectedResponseHeaders(headers, names) {
+  const selected = {};
+  for (const name of names ?? []) {
+    const headerName = name.trim();
+    if (!headerName || /[\r\n]/.test(headerName)) continue;
+    const value = headers.get(headerName);
+    if (value) selected[headerName] = value;
+  }
+  return selected;
+}
+function isJsonContentType(value) {
+  const mediaType = value.split(";")[0]?.trim().toLowerCase() ?? "";
+  return mediaType === "application/json" || mediaType.endsWith("+json");
 }
 function parseJsonBody(text) {
   if (!text) return null;
@@ -30609,92 +30652,6 @@ function registerOpenTaskPrompts(server) {
   );
 }
 
-// plugins/shared/opentask-client/src/resources.ts
-var DOC_RESOURCES = [
-  {
-    name: "opentask_skill",
-    uri: "opentask://docs/skill",
-    path: "/skill.md",
-    title: "OpenTask Skill",
-    description: "Canonical OpenTask API contract and workflow guide for agents."
-  },
-  {
-    name: "opentask_heartbeat",
-    uri: "opentask://docs/heartbeat",
-    path: "/heartbeat.md",
-    title: "OpenTask Heartbeat",
-    description: "Periodic sweep routine for autonomous OpenTask agents."
-  },
-  {
-    name: "opentask_messaging",
-    uri: "opentask://docs/messaging",
-    path: "/messaging.md",
-    title: "OpenTask Messaging",
-    description: "Async task, bid, and contract thread rules."
-  }
-];
-function registerOpenTaskResources(server, client) {
-  for (const resource of DOC_RESOURCES) {
-    server.registerResource(
-      resource.name,
-      resource.uri,
-      {
-        title: resource.title,
-        description: resource.description,
-        mimeType: "text/markdown"
-      },
-      async () => ({
-        contents: [
-          {
-            uri: resource.uri,
-            mimeType: "text/markdown",
-            text: String(await client.get(resource.path, { public: true, accept: "text" }))
-          }
-        ]
-      })
-    );
-  }
-  server.registerResource(
-    "opentask_openapi",
-    "opentask://docs/openapi",
-    {
-      title: "OpenTask OpenAPI",
-      description: "OpenAPI JSON for OpenTask API clients.",
-      mimeType: "application/json"
-    },
-    async () => ({
-      contents: [
-        {
-          uri: "opentask://docs/openapi",
-          mimeType: "application/json",
-          text: JSON.stringify(await client.get("/api/openapi", { public: true }), null, 2)
-        }
-      ]
-    })
-  );
-  server.registerResource(
-    "opentask_task",
-    new ResourceTemplate("opentask://tasks/{taskId}", { list: void 0 }),
-    {
-      title: "OpenTask Task",
-      description: "Task detail by task id through the public task API.",
-      mimeType: "application/json"
-    },
-    async (_uri, { taskId }) => {
-      const id = Array.isArray(taskId) ? taskId[0] : taskId;
-      return {
-        contents: [
-          {
-            uri: `opentask://tasks/${id}`,
-            mimeType: "application/json",
-            text: JSON.stringify(await client.get(`/api/tasks/${id}`, { public: true }), null, 2)
-          }
-        ]
-      };
-    }
-  );
-}
-
 // plugins/shared/opentask-client/src/schemas.ts
 var BUDGET_CURRENCIES = [
   "USDC",
@@ -30755,6 +30712,10 @@ var tokenNetworkSchema = external_exports3.string().trim().max(32).optional().tr
 var evmAddressSchema = external_exports3.string().trim().regex(/^0x[a-fA-F0-9]{40}$/, "Expected a 0x-prefixed EVM address.").refine((value) => value.toLowerCase() !== "0x0000000000000000000000000000000000000000", {
   message: "EVM address must not be the zero address."
 });
+var maxPaymentUint256 = (1n << 256n) - 1n;
+var amountAtomicSchema = external_exports3.string().trim().regex(/^\d+$/, "Use a positive atomic token amount").refine((value) => BigInt(value) > 0n, "Use a positive atomic token amount").refine((value) => BigInt(value) <= maxPaymentUint256, "Amount exceeds uint256");
+var milestoneAcceptanceCriteriaSchema = external_exports3.array(external_exports3.string().trim().min(1).max(500)).max(50).optional();
+var milestoneDueAtSchema = external_exports3.string().trim().datetime().optional().nullable();
 var emptyInputSchema = external_exports3.object({});
 var confirmedInputSchema = external_exports3.object({
   confirmed: confirmedSchema
@@ -30820,6 +30781,25 @@ var profileUpdateSchema = external_exports3.object({
   message: "Provide at least one profile field to update."
 });
 var listCapabilitiesSchema = external_exports3.object({});
+var createPortfolioEvidenceSchema = external_exports3.object({
+  capabilityId: idSchema.optional(),
+  contractId: idSchema.optional(),
+  title: external_exports3.string().trim().min(3).max(120),
+  summary: external_exports3.string().trim().max(1e3).optional(),
+  url: external_exports3.string().trim().url().max(2e3),
+  evidenceType: external_exports3.string().trim().min(1).max(80).optional(),
+  visibility: external_exports3.enum(["public", "private", "participants"]).optional(),
+  metadata: external_exports3.record(external_exports3.string(), external_exports3.unknown()).optional()
+});
+var createSignedActionSchema = external_exports3.object({
+  keyId: idSchema,
+  signedAt: external_exports3.string().datetime(),
+  signature: external_exports3.string().trim().min(16).max(12e3),
+  action: external_exports3.string().trim().min(3).max(120),
+  entityType: external_exports3.string().trim().min(1).max(80),
+  entityId: external_exports3.string().trim().min(1).max(160),
+  payload: external_exports3.record(external_exports3.string(), external_exports3.unknown()).optional()
+});
 var agentAuthScopesSchema = external_exports3.array(apiTokenScopeSchema).min(1).max(32);
 var agentHandleSchema = external_exports3.string().trim().min(3).max(32).regex(/^[a-z0-9_]+$/i, "Use only letters, numbers, and underscores");
 var registerAgentSchema = external_exports3.object({
@@ -30866,17 +30846,22 @@ var payoutMethodCreateSchema = external_exports3.object({
   network: tokenNetworkSchema,
   address: external_exports3.string().trim().min(4).max(200),
   memo: external_exports3.string().trim().max(80).optional().nullable(),
-  label: external_exports3.string().trim().max(80).optional().nullable()
+  label: external_exports3.string().trim().max(80).optional().nullable(),
+  confirmed: confirmedSchema
 });
 var payoutMethodUpdateSchema = external_exports3.object({
   payoutMethodId: idSchema,
   address: external_exports3.string().trim().min(4).max(200).optional(),
   memo: external_exports3.string().trim().max(80).optional().nullable(),
   label: external_exports3.string().trim().max(80).optional().nullable(),
-  isActive: external_exports3.boolean().optional()
-}).refine(({ payoutMethodId: _payoutMethodId, ...rest }) => Object.keys(rest).length > 0, {
-  message: "Provide at least one payout method field to update."
-});
+  isActive: external_exports3.boolean().optional(),
+  confirmed: confirmedSchema
+}).refine(
+  ({ payoutMethodId: _payoutMethodId, confirmed: _confirmed, ...rest }) => Object.keys(rest).length > 0,
+  {
+    message: "Provide at least one payout method field to update."
+  }
+);
 var payoutMethodIdSchema = external_exports3.object({
   payoutMethodId: idSchema,
   confirmed: confirmedSchema
@@ -30928,6 +30913,86 @@ var bidCapabilityClaimSchema = external_exports3.object({
   fitSummary: external_exports3.string().trim().max(1e3).optional().nullable(),
   promisedOutputs: capabilityListSchema.optional()
 });
+var authoringTaskAttachmentKinds = [
+  "repo",
+  "issue",
+  "logs",
+  "document",
+  "dataset",
+  "design",
+  "screenshot",
+  "deployment",
+  "other"
+];
+var authoringTaskAttachmentDraftSchema = external_exports3.object({
+  label: external_exports3.string().trim().max(120).optional().nullable(),
+  url: external_exports3.string().trim().max(2048).optional().nullable(),
+  kind: external_exports3.enum(authoringTaskAttachmentKinds).optional(),
+  requiredForDelivery: external_exports3.boolean().optional()
+});
+var authoringTaskDraftSchema = external_exports3.object({
+  title: external_exports3.string().trim().max(120).optional().nullable(),
+  description: external_exports3.string().trim().max(2e4).optional().nullable(),
+  acceptanceCriteria: external_exports3.array(external_exports3.string().trim().min(1).max(500)).max(100).optional().nullable(),
+  skillsTags: external_exports3.array(external_exports3.string().trim().min(1).max(40)).max(50).optional(),
+  budgetAmount: external_exports3.number().positive().finite().optional(),
+  budgetCurrency: external_exports3.enum(BUDGET_CURRENCIES).optional(),
+  budgetCurrencyCustom: external_exports3.string().trim().min(1).max(10).optional(),
+  deadline: external_exports3.string().datetime().optional().nullable(),
+  capabilityRequirements: taskCapabilityRequirementsSchema,
+  attachments: external_exports3.array(authoringTaskAttachmentDraftSchema).max(20).optional()
+});
+var authoringProposalDraftSchema = external_exports3.object({
+  targetProfileId: idSchema.optional().nullable(),
+  expiresAt: external_exports3.string().datetime().optional().nullable(),
+  task: authoringTaskDraftSchema.optional()
+});
+var authoringPriceFields = {
+  priceText: external_exports3.string().trim().max(100).optional().nullable(),
+  priceAmount: external_exports3.number().positive().finite().optional(),
+  priceCurrency: tokenSymbolSchema.optional()
+};
+function refineAuthoringStructuredPrice(data, ctx) {
+  const hasStructuredAmount = data.priceAmount !== void 0;
+  const hasStructuredCurrency = data.priceCurrency !== void 0;
+  if (hasStructuredAmount !== hasStructuredCurrency) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Structured price requires amount and currency",
+      path: hasStructuredAmount ? ["priceCurrency"] : ["priceAmount"]
+    });
+  }
+}
+var authoringBidDraftSchema = external_exports3.object({
+  ...authoringPriceFields,
+  taskId: idSchema.optional(),
+  etaDays: external_exports3.number().int().min(0).max(365).optional().nullable(),
+  approach: external_exports3.string().trim().max(1e4).optional().nullable(),
+  capabilityClaims: external_exports3.array(bidCapabilityClaimSchema).max(10).optional()
+}).superRefine(refineAuthoringStructuredPrice);
+var authoringCounterOfferDraftSchema = external_exports3.object({
+  ...authoringPriceFields,
+  bidId: idSchema.optional(),
+  etaDays: external_exports3.number().int().min(0).max(365).optional().nullable(),
+  approach: external_exports3.string().trim().max(1e4).optional().nullable(),
+  message: external_exports3.string().trim().max(2e3).optional().nullable()
+}).superRefine(refineAuthoringStructuredPrice);
+var authoringPreviewSchema = external_exports3.discriminatedUnion("kind", [
+  external_exports3.object({ kind: external_exports3.literal("task"), draft: authoringTaskDraftSchema }),
+  external_exports3.object({ kind: external_exports3.literal("proposal"), draft: authoringProposalDraftSchema }),
+  external_exports3.object({ kind: external_exports3.literal("bid"), draft: authoringBidDraftSchema }),
+  external_exports3.object({ kind: external_exports3.literal("counterOffer"), draft: authoringCounterOfferDraftSchema })
+]);
+var authoringMatchPreviewSchema = external_exports3.object({
+  task: authoringTaskDraftSchema,
+  limit: external_exports3.number().int().min(1).max(20).optional()
+});
+var taskRecommendationsSchema = external_exports3.object({
+  taskId: idSchema,
+  cursor: external_exports3.string().optional(),
+  includeWeak: external_exports3.boolean().optional(),
+  limit: external_exports3.number().int().min(1).max(50).optional()
+});
 var createBidSchema = external_exports3.object({
   taskId: idSchema,
   priceText: external_exports3.string().trim().min(1).max(100),
@@ -30943,10 +31008,6 @@ var listBidsSchema = external_exports3.object({
 }).refine(({ mode, taskId }) => mode !== "task" || Boolean(taskId), {
   message: "taskId is required when mode is task.",
   path: ["taskId"]
-});
-var listTaskBidsSchema = external_exports3.object({
-  taskId: idSchema,
-  ...limitCursorSchema
 });
 var getBidSchema = external_exports3.object({
   bidId: idSchema
@@ -30984,25 +31045,6 @@ var counterOfferMutationSchema = external_exports3.object({
   counterOfferId: idSchema,
   confirmed: confirmedSchema
 });
-var rejectCounterOfferSchema = counterOfferMutationSchema.extend({
-  reason: external_exports3.string().trim().max(2e3).optional()
-});
-var discoverAgentsSchema = external_exports3.object({
-  query: external_exports3.string().trim().max(200).optional(),
-  service: external_exports3.string().trim().max(40).optional(),
-  sort: external_exports3.enum(["new", "rating", "reviewCount", "completedContracts"]).optional(),
-  ...limitCursorSchema
-});
-var listPublicProfilesSchema = external_exports3.object({
-  kind: external_exports3.enum(["agent", "human", "all"]).default("agent"),
-  query: external_exports3.string().trim().max(200).optional(),
-  service: external_exports3.string().trim().max(40).optional(),
-  sort: external_exports3.enum(["new", "rating", "reviewCount", "completedContracts"]).optional(),
-  ...limitCursorSchema
-});
-var profileIdSchema = external_exports3.object({
-  profileId: idSchema
-});
 var searchProfilesSchema = external_exports3.object({
   mode: external_exports3.enum(["agent", "public"]).default("agent").describe("Use agent for authenticated router-payable service listings; use public for public profiles."),
   kind: external_exports3.enum(["agent", "human", "all"]).optional(),
@@ -31010,6 +31052,70 @@ var searchProfilesSchema = external_exports3.object({
   service: external_exports3.string().trim().max(40).optional(),
   sort: external_exports3.enum(["new", "rating", "reviewCount", "completedContracts"]).optional(),
   ...limitCursorSchema
+});
+var matchingPreferenceIdSchema = external_exports3.string().trim().min(1).max(200);
+var matchingPreferenceSetSchema = external_exports3.object({
+  targetProfileId: matchingPreferenceIdSchema,
+  taskId: matchingPreferenceIdSchema.optional(),
+  action: external_exports3.enum(["saved", "hidden"]),
+  reason: external_exports3.string().trim().max(500).optional()
+});
+var matchingPreferenceDeleteSchema = external_exports3.object({
+  targetProfileId: matchingPreferenceIdSchema,
+  taskId: matchingPreferenceIdSchema.optional()
+});
+var savedSearchListSchema = external_exports3.array(external_exports3.string().trim().min(1).max(80)).max(30);
+var savedSearchBudgetSchema = external_exports3.object({
+  minAmount: external_exports3.number().nonnegative().finite().optional(),
+  maxAmount: external_exports3.number().nonnegative().finite().optional(),
+  currency: external_exports3.string().trim().min(1).max(16).optional()
+}).strict().refine(
+  (value) => value.minAmount === void 0 || value.maxAmount === void 0 || value.minAmount <= value.maxAmount,
+  {
+    message: "Minimum budget must be less than or equal to maximum budget",
+    path: ["minAmount"]
+  }
+);
+var savedSearchReliabilitySchema = external_exports3.object({
+  averageRating: external_exports3.number().min(0).max(5).optional(),
+  completedContracts: external_exports3.number().int().min(0).max(1e6).optional(),
+  reviewCount: external_exports3.number().int().min(0).max(1e6).optional()
+}).strict();
+var savedSearchFiltersSchema = external_exports3.object({
+  services: savedSearchListSchema.optional(),
+  capabilities: savedSearchListSchema.optional(),
+  tools: savedSearchListSchema.optional(),
+  outputs: savedSearchListSchema.optional(),
+  availability: external_exports3.enum(["available", "limited", "unavailable", "unknown"]).optional(),
+  payability: external_exports3.enum(["any", "router_payable"]).optional(),
+  budget: savedSearchBudgetSchema.optional(),
+  minReliability: savedSearchReliabilitySchema.optional()
+}).strict();
+var listSavedSearchesSchema = external_exports3.object({
+  ...limitCursorSchema
+});
+var getSavedSearchSchema = external_exports3.object({
+  savedSearchId: idSchema
+});
+var createSavedSearchSchema = external_exports3.object({
+  name: external_exports3.string().trim().min(1).max(80),
+  target: external_exports3.enum(["tasks", "agents"]).optional(),
+  query: external_exports3.string().trim().max(200).optional().nullable(),
+  filters: savedSearchFiltersSchema.optional(),
+  cadence: external_exports3.enum(["none", "instant", "daily", "weekly"]).optional()
+});
+var updateSavedSearchSchema = external_exports3.object({
+  savedSearchId: idSchema,
+  name: external_exports3.string().trim().min(1).max(80).optional(),
+  target: external_exports3.enum(["tasks", "agents"]).optional(),
+  query: external_exports3.string().trim().max(200).optional().nullable(),
+  filters: savedSearchFiltersSchema.optional(),
+  cadence: external_exports3.enum(["none", "instant", "daily", "weekly"]).optional()
+}).refine(({ savedSearchId: _savedSearchId, ...rest }) => Object.keys(rest).length > 0, {
+  message: "No fields to update"
+});
+var deleteSavedSearchSchema = external_exports3.object({
+  savedSearchId: idSchema
 });
 var getProfileContextSchema = external_exports3.object({
   profileId: idSchema,
@@ -31059,6 +31165,83 @@ var getContractContextSchema = external_exports3.object({
   includePaymentRequests: external_exports3.boolean().default(true),
   includeReviews: external_exports3.boolean().default(true)
 });
+var getPaymentOptionsSchema = external_exports3.object({
+  contractId: idSchema
+});
+var listContractPaymentArtifactsSchema = external_exports3.object({
+  contractId: idSchema
+});
+var getInvoiceSchema = external_exports3.object({
+  invoiceId: idSchema
+});
+var getReceiptSchema = external_exports3.object({
+  receiptId: idSchema
+});
+var listRefundRequestsSchema = external_exports3.object({
+  contractId: idSchema
+});
+var createRefundRequestSchema = external_exports3.object({
+  contractId: idSchema,
+  paymentRequestId: idSchema.optional(),
+  amountAtomic: amountAtomicSchema.optional(),
+  reason: external_exports3.string().trim().min(10).max(1e3),
+  confirmed: confirmedSchema
+});
+var respondRefundRequestSchema = external_exports3.object({
+  contractId: idSchema,
+  refundRequestId: idSchema,
+  action: external_exports3.enum(["approve", "deny", "cancel"]),
+  response: external_exports3.string().trim().max(1e3).optional(),
+  confirmed: confirmedSchema
+});
+var listContractMilestonesSchema = external_exports3.object({
+  contractId: idSchema
+});
+var createContractMilestoneSchema = external_exports3.object({
+  contractId: idSchema,
+  title: external_exports3.string().trim().min(1).max(160),
+  description: external_exports3.string().trim().max(5e3).optional().nullable(),
+  acceptanceCriteria: milestoneAcceptanceCriteriaSchema,
+  amountAtomic: amountAtomicSchema,
+  dueAt: milestoneDueAtSchema,
+  confirmed: confirmedSchema
+});
+var updateContractMilestoneSchema = external_exports3.object({
+  contractId: idSchema,
+  milestoneId: idSchema,
+  action: external_exports3.enum(["update", "activate", "cancel"]),
+  title: external_exports3.string().trim().min(1).max(160).optional(),
+  description: external_exports3.string().trim().max(5e3).optional().nullable(),
+  acceptanceCriteria: milestoneAcceptanceCriteriaSchema,
+  dueAt: milestoneDueAtSchema,
+  reason: external_exports3.string().trim().max(2e3).optional(),
+  confirmed: confirmedSchema
+}).superRefine((value, ctx) => {
+  if (value.action === "update" && value.title === void 0 && value.description === void 0 && value.acceptanceCriteria === void 0 && value.dueAt === void 0) {
+    ctx.addIssue({ code: "custom", message: "No milestone fields to update" });
+  }
+});
+var submitContractMilestoneSchema = external_exports3.object({
+  contractId: idSchema,
+  milestoneId: idSchema,
+  deliverableUrl: external_exports3.string().trim().url().max(2048).optional().nullable(),
+  notes: external_exports3.string().trim().max(5e3).optional().nullable(),
+  confirmed: confirmedSchema
+}).refine(
+  (value) => Boolean(value.deliverableUrl?.trim() || value.notes?.trim()),
+  "Provide a deliverableUrl or notes"
+);
+var decideContractMilestoneSchema = external_exports3.object({
+  contractId: idSchema,
+  milestoneId: idSchema,
+  action: external_exports3.enum(["accept", "reject"]),
+  reason: external_exports3.string().trim().min(10).max(2e3).optional(),
+  confirmed: confirmedSchema
+}).superRefine((value, ctx) => {
+  if (value.action === "reject" && !value.reason) {
+    ctx.addIssue({ code: "custom", path: ["reason"], message: "Reason is required when rejecting a milestone" });
+  }
+});
 var createContractSchema = external_exports3.object({
   taskId: idSchema,
   bidId: idSchema,
@@ -31078,14 +31261,53 @@ var paymentRequestCreateSchema = external_exports3.object({
   expiresInMinutes: external_exports3.number().int().min(5).max(1440).optional(),
   confirmed: external_exports3.literal(true).describe("Required: confirms the caller intentionally wants a payment request created.")
 });
+var paymentHeaderPayloadSchema = external_exports3.string().trim().min(1).max(8192).refine((value) => !/[\r\n]/.test(value), "Payment header payload must be a single header value");
+var payContractSchema = external_exports3.object({
+  contractId: idSchema,
+  payerAddress: evmAddressSchema.optional(),
+  milestoneId: idSchema.optional(),
+  sellerAmount: external_exports3.string().trim().max(80).optional(),
+  reuseActive: external_exports3.boolean().optional(),
+  expiresInMinutes: external_exports3.number().int().min(5).max(1440).optional(),
+  protocol: external_exports3.enum(["mpp-httpauth", "x402-v2"]).optional(),
+  paymentCredential: paymentHeaderPayloadSchema.optional(),
+  x402PaymentSignature: paymentHeaderPayloadSchema.optional(),
+  confirmed: confirmedSchema
+}).superRefine((value, ctx) => {
+  if (value.paymentCredential && value.x402PaymentSignature) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["paymentCredential"],
+      message: "Send either paymentCredential or x402PaymentSignature, not both."
+    });
+  }
+  if (value.paymentCredential && value.protocol === "x402-v2") {
+    ctx.addIssue({
+      code: "custom",
+      path: ["protocol"],
+      message: "paymentCredential uses mpp-httpauth; use x402PaymentSignature for x402-v2."
+    });
+  }
+  if (value.x402PaymentSignature && value.protocol === "mpp-httpauth") {
+    ctx.addIssue({
+      code: "custom",
+      path: ["protocol"],
+      message: "x402PaymentSignature uses x402-v2; use paymentCredential for mpp-httpauth."
+    });
+  }
+  if (!value.paymentCredential && !value.x402PaymentSignature && !value.payerAddress) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["payerAddress"],
+      message: "payerAddress is required when creating a Payment Auth or x402 challenge."
+    });
+  }
+});
 var paymentTxSchema = external_exports3.object({
   contractId: idSchema,
   paymentRequestId: idSchema,
   txHash: external_exports3.string().regex(/^0x[a-fA-F0-9]{64}$/),
   confirmed: external_exports3.literal(true).describe("Required: confirms the caller intentionally wants to submit or verify this tx hash.")
-});
-var paymentRequestListSchema = external_exports3.object({
-  contractId: idSchema
 });
 var paymentRequestCancelSchema = external_exports3.object({
   contractId: idSchema,
@@ -31103,6 +31325,8 @@ var COMMUNITY_PROJECT_API_ROUTES = [
   { method: "PATCH", template: "/api/agent/community-projects/:projectId/artifacts/:artifactId" },
   { method: "GET", template: "/api/agent/community-projects/:projectId/artifacts" },
   { method: "POST", template: "/api/agent/community-projects/:projectId/artifacts" },
+  { method: "GET", template: "/api/agent/community-projects/:projectId/comments" },
+  { method: "POST", template: "/api/agent/community-projects/:projectId/comments" },
   { method: "POST", template: "/api/agent/community-projects/:projectId/contributions/:contributionId/decision" },
   { method: "GET", template: "/api/agent/community-projects/:projectId/contributions/:contributionId/handoffs" },
   { method: "POST", template: "/api/agent/community-projects/:projectId/contributions/:contributionId/handoffs" },
@@ -31328,37 +31552,12 @@ var leaveReviewSchema = external_exports3.object({
   text: external_exports3.string().trim().max(2e3).optional().nullable(),
   capabilityAssessments: external_exports3.array(capabilityReviewAssessmentSchema).max(10).optional()
 });
-var contractIdSchema = external_exports3.object({
-  contractId: idSchema
-});
 var openDisputeSchema = external_exports3.object({
   contractId: idSchema,
   reason: external_exports3.string().trim().min(10).max(5e3),
   evidenceUrl: external_exports3.string().url().max(2e3).optional().nullable(),
   notes: external_exports3.string().trim().max(2e4).optional().nullable(),
   confirmed: confirmedSchema
-});
-var listMessagesSchema = external_exports3.object({
-  entityType: external_exports3.enum(["bid", "contract"]),
-  entityId: idSchema,
-  afterCreatedAt: external_exports3.string().datetime().optional(),
-  afterId: idSchema.optional(),
-  ...limitCursorSchema
-});
-var sendMessageSchema = external_exports3.object({
-  entityType: external_exports3.enum(["bid", "contract"]),
-  entityId: idSchema,
-  body: external_exports3.string().trim().min(1).max(8e3)
-});
-var listTaskCommentsSchema = external_exports3.object({
-  taskId: idSchema,
-  afterCreatedAt: external_exports3.string().datetime().optional(),
-  afterId: idSchema.optional(),
-  ...limitCursorSchema
-});
-var sendTaskCommentSchema = external_exports3.object({
-  taskId: idSchema,
-  body: external_exports3.string().trim().min(1).max(8e3)
 });
 var listNotificationsSchema = external_exports3.object({
   mode: external_exports3.enum(["items", "count"]).default("items"),
@@ -31386,6 +31585,57 @@ var respondCounterOfferSchema = external_exports3.object({
 });
 var notificationIdSchema = external_exports3.object({
   notificationId: idSchema
+});
+var WEBHOOK_EVENT_TYPES = [
+  "*",
+  "notification.created",
+  "webhook.test",
+  "task.comment.created",
+  "thread.message.created",
+  "task_proposal.created",
+  "task_proposal.responded",
+  "bid.created",
+  "bid.updated",
+  "bid.rejected",
+  "counter_offer.created",
+  "counter_offer.withdrawn",
+  "counter_offer.accepted",
+  "counter_offer.rejected",
+  "contract.created",
+  "contract.submission.created",
+  "dispute.opened",
+  "review.created",
+  "saved_search.task_match",
+  "saved_search.agent_match"
+];
+var webhookEventTypeSchema = external_exports3.enum(WEBHOOK_EVENT_TYPES);
+var webhookEventTypesSchema = external_exports3.array(webhookEventTypeSchema).min(1).max(32).optional();
+var webhookIdSchema = external_exports3.object({
+  webhookId: idSchema
+});
+var listWebhookDeliveriesSchema = external_exports3.object({
+  webhookId: idSchema,
+  ...limitCursorSchema
+});
+var createWebhookSchema = external_exports3.object({
+  url: external_exports3.string().trim().min(1).max(2048),
+  label: external_exports3.string().trim().min(1).max(80).nullable().optional(),
+  eventTypes: webhookEventTypesSchema,
+  confirmed: confirmedSchema
+});
+var updateWebhookSchema = external_exports3.object({
+  webhookId: idSchema,
+  url: external_exports3.string().trim().min(1).max(2048).optional(),
+  label: external_exports3.string().trim().min(1).max(80).nullable().optional(),
+  eventTypes: webhookEventTypesSchema,
+  status: external_exports3.enum(["active", "paused"]).optional(),
+  confirmed: confirmedSchema
+}).refine(({ webhookId: _webhookId, confirmed: _confirmed, ...rest }) => Object.keys(rest).length > 0, {
+  message: "At least one webhook field is required."
+});
+var rotateWebhookSecretSchema = external_exports3.object({
+  webhookId: idSchema,
+  confirmed: confirmedSchema
 });
 var reportBugSchema = external_exports3.object({
   title: external_exports3.string().trim().max(200).optional(),
@@ -31417,6 +31667,13 @@ var toolOutputSchema = external_exports3.object({
     confirmation: external_exports3.string().optional(),
     requiredScopes: external_exports3.array(external_exports3.string()).optional()
   }).optional(),
+  change: external_exports3.object({
+    affectedResourceId: external_exports3.string().nullable(),
+    priorState: external_exports3.unknown().nullable(),
+    newState: external_exports3.unknown().nullable(),
+    nextExpectedAction: external_exports3.string(),
+    redaction: external_exports3.string()
+  }).optional(),
   nextActions: external_exports3.array(external_exports3.string()).optional()
 });
 function makePartialShape(shape) {
@@ -31426,8 +31683,76 @@ function makePartialShape(shape) {
 }
 
 // plugins/shared/opentask-client/src/tools.ts
+var IDEMPOTENCY_REQUIRED_TOOL_NAMES = /* @__PURE__ */ new Set([
+  "opentask_create_contract",
+  "opentask_pay_contract",
+  "opentask_create_payment_request",
+  "opentask_cancel_payment_request",
+  "opentask_submit_payment_tx",
+  "opentask_verify_payment",
+  "opentask_decide_submission",
+  "opentask_create_api_token",
+  "opentask_revoke_api_token",
+  "opentask_upsert_payout_method",
+  "opentask_update_payout_method",
+  "opentask_delete_payout_method",
+  "opentask_open_dispute",
+  "opentask_create_contract_milestone",
+  "opentask_update_contract_milestone",
+  "opentask_submit_contract_milestone",
+  "opentask_decide_contract_milestone",
+  "opentask_create_refund_request",
+  "opentask_respond_refund_request"
+]);
+var PAYMENT_AUTH_CREDENTIAL_HEADER = "X-OpenTask-Payment-Credential";
+var PAYMENT_AUTH_RECEIPT_HEADER = "Payment-Receipt";
+var PAYMENT_PROTOCOL_HEADER = "X-OpenTask-Payment-Protocol";
+var X402_PAYMENT_REQUIRED_HEADER = "PAYMENT-REQUIRED";
+var X402_PAYMENT_RESPONSE_HEADER = "PAYMENT-RESPONSE";
+var X402_PAYMENT_SIGNATURE_HEADER = "PAYMENT-SIGNATURE";
+var PAY_CONTRACT_RESPONSE_HEADERS = [
+  "WWW-Authenticate",
+  X402_PAYMENT_REQUIRED_HEADER,
+  PAYMENT_AUTH_RECEIPT_HEADER,
+  X402_PAYMENT_RESPONSE_HEADER,
+  "Retry-After",
+  "X-Request-ID"
+];
+var SCOPE_TOKEN_PATTERN = /\b[a-z]+:[a-z]+\b/g;
+function requiresOpenTaskMcpIdempotencyKey(toolName, risk, requiredScopes = []) {
+  return risk === "high" || IDEMPOTENCY_REQUIRED_TOOL_NAMES.has(toolName) || risk === "sensitive" && requiredScopes.length > 0;
+}
+function openTaskMcpToolSafetyCatalog() {
+  return toolDefinitions.map((definition) => {
+    const requiredScopes = definition.requiredScopes ?? [];
+    const scopeRequirements = scopeRequirementsForMetadata(requiredScopes);
+    return {
+      name: definition.name,
+      title: definition.title,
+      risk: definition.risk,
+      requiredScopes: [...requiredScopes],
+      requiredScopeMode: requiredScopeModeForMetadata(scopeRequirements),
+      scopeRequirements,
+      requiresConfirmation: Boolean(definition.confirmation),
+      confirmation: definition.confirmation ?? null,
+      requiresIdempotencyKey: requiresOpenTaskMcpIdempotencyKey(
+        definition.name,
+        definition.risk,
+        requiredScopes
+      )
+    };
+  });
+}
 function registerOpenTaskTools(server, client) {
   for (const definition of toolDefinitions) {
+    const requiredScopes = definition.requiredScopes ?? [];
+    const scopeRequirements = scopeRequirementsForMetadata(requiredScopes);
+    const requiredScopeMode = requiredScopeModeForMetadata(scopeRequirements);
+    const idempotencyRequired = requiresOpenTaskMcpIdempotencyKey(
+      definition.name,
+      definition.risk,
+      requiredScopes
+    );
     server.registerTool(
       definition.name,
       {
@@ -31438,8 +31763,13 @@ function registerOpenTaskTools(server, client) {
         annotations: definition.annotations ?? annotationsForRisk(definition.risk),
         _meta: {
           "opentask/risk": definition.risk,
-          "opentask/requiredScopes": definition.requiredScopes ?? [],
-          ...definition.confirmation ? { "opentask/confirmation": definition.confirmation } : {}
+          "opentask/requiredScopes": requiredScopes,
+          ...scopeRequirements.length > 0 ? {
+            "opentask/requiredScopeMode": requiredScopeMode,
+            "opentask/scopeRequirements": scopeRequirements
+          } : {},
+          ...definition.confirmation ? { "opentask/confirmation": definition.confirmation } : {},
+          ...idempotencyRequired ? { "opentask/idempotencyRequired": true } : {}
         }
       },
       async (input) => {
@@ -31452,6 +31782,36 @@ function registerOpenTaskTools(server, client) {
       }
     );
   }
+}
+function scopeRequirementsForMetadata(requiredScopes) {
+  const exactScopes = requiredScopes.filter((scope) => isExactScopeToken(scope));
+  if (exactScopes.length === requiredScopes.length && exactScopes.length > 0) {
+    return [{ requiredScopes: uniqueStrings(exactScopes), scopeMode: "all" }];
+  }
+  return requiredScopes.map((scopeText) => {
+    const scopes = uniqueStrings(scopeText.match(SCOPE_TOKEN_PATTERN) ?? []);
+    if (scopes.length === 0) return null;
+    return {
+      requiredScopes: scopes,
+      scopeMode: scopeTextSuggestsAlternativeScopes(scopeText) ? "any" : "all"
+    };
+  }).filter((requirement) => requirement !== null);
+}
+function requiredScopeModeForMetadata(scopeRequirements) {
+  if (scopeRequirements.length === 1) return scopeRequirements[0]?.scopeMode ?? "all";
+  return "all";
+}
+function isExactScopeToken(value) {
+  const trimmed = value.trim();
+  const matches = trimmed.match(SCOPE_TOKEN_PATTERN) ?? [];
+  return matches.length === 1 && matches[0] === trimmed;
+}
+function scopeTextSuggestsAlternativeScopes(value) {
+  const normalized = value.toLowerCase();
+  return normalized.includes(" or ") || normalized.includes(",") || normalized.includes(" for ");
+}
+function uniqueStrings(values) {
+  return [...new Set(values)];
 }
 var toolDefinitions = [
   {
@@ -31501,6 +31861,90 @@ var toolDefinitions = [
     risk: "write",
     requiredScopes: ["profile:write"],
     run: async (client, input) => wrap("opentask_update_profile", "PATCH", "/api/agent/me", await client.patch("/api/agent/me", input))
+  },
+  {
+    name: "opentask_get_discovery_readiness",
+    title: "Get Discovery Readiness",
+    description: "Fetch private marketplace discovery readiness, blockers, and next actions for the authenticated seller profile.",
+    inputSchema: emptyInputSchema,
+    risk: "read",
+    requiredScopes: ["profile:read", "capabilities:read"],
+    run: async (client) => wrap(
+      "opentask_get_discovery_readiness",
+      "GET",
+      "/api/agent/me/discovery-readiness",
+      await client.get("/api/agent/me/discovery-readiness")
+    )
+  },
+  {
+    name: "opentask_get_trust_summary",
+    title: "Get Trust Summary",
+    description: "Fetch private trust, reputation, and provenance summary for the authenticated profile.",
+    inputSchema: emptyInputSchema,
+    risk: "read",
+    requiredScopes: ["profile:read"],
+    run: async (client) => wrap(
+      "opentask_get_trust_summary",
+      "GET",
+      "/api/agent/me/trust",
+      await client.get("/api/agent/me/trust")
+    )
+  },
+  {
+    name: "opentask_list_portfolio_evidence",
+    title: "List Portfolio Evidence",
+    description: "List portfolio evidence attached to the authenticated profile and capabilities.",
+    inputSchema: emptyInputSchema,
+    risk: "read",
+    requiredScopes: ["profile:read"],
+    run: async (client) => wrap(
+      "opentask_list_portfolio_evidence",
+      "GET",
+      "/api/agent/me/portfolio",
+      await client.get("/api/agent/me/portfolio")
+    )
+  },
+  {
+    name: "opentask_create_portfolio_evidence",
+    title: "Create Portfolio Evidence",
+    description: "Attach a portfolio URL to the authenticated profile, optionally linking a capability or accepted seller contract.",
+    inputSchema: createPortfolioEvidenceSchema,
+    risk: "write",
+    requiredScopes: ["profile:write"],
+    run: async (client, input) => wrap(
+      "opentask_create_portfolio_evidence",
+      "POST",
+      "/api/agent/me/portfolio",
+      await client.post("/api/agent/me/portfolio", input)
+    )
+  },
+  {
+    name: "opentask_list_signed_actions",
+    title: "List Signed Actions",
+    description: "List signed action provenance records for the authenticated profile.",
+    inputSchema: emptyInputSchema,
+    risk: "read",
+    requiredScopes: ["profile:read"],
+    run: async (client) => wrap(
+      "opentask_list_signed_actions",
+      "GET",
+      "/api/agent/me/signed-actions",
+      await client.get("/api/agent/me/signed-actions")
+    )
+  },
+  {
+    name: "opentask_create_signed_action",
+    title: "Create Signed Action",
+    description: "Record verified signed-action provenance for an authenticated profile key.",
+    inputSchema: createSignedActionSchema,
+    risk: "write",
+    requiredScopes: ["profile:write"],
+    run: async (client, input) => wrap(
+      "opentask_create_signed_action",
+      "POST",
+      "/api/agent/me/signed-actions",
+      await client.post("/api/agent/me/signed-actions", input)
+    )
   },
   {
     name: "opentask_list_api_tokens",
@@ -31603,7 +32047,8 @@ var toolDefinitions = [
     inputSchema: payoutMethodCreateSchema,
     risk: "write",
     requiredScopes: ["profile:write"],
-    run: async (client, input) => wrap(
+    confirmation: "Requires confirmed=true because payout method creation changes contract-selectable settlement metadata.",
+    run: async (client, { confirmed: _confirmed, ...input }) => wrap(
       "opentask_upsert_payout_method",
       "POST",
       "/api/agent/me/payout-methods",
@@ -31617,7 +32062,8 @@ var toolDefinitions = [
     inputSchema: payoutMethodUpdateSchema,
     risk: "write",
     requiredScopes: ["profile:write"],
-    run: async (client, { payoutMethodId, ...body }) => wrap(
+    confirmation: "Requires confirmed=true because payout method updates can change future contract settlement metadata.",
+    run: async (client, { payoutMethodId, confirmed: _confirmed, ...body }) => wrap(
       "opentask_update_payout_method",
       "PATCH",
       `/api/agent/me/payout-methods/${payoutMethodId}`,
@@ -31707,10 +32153,11 @@ var toolDefinitions = [
     requiredScopes: ["tasks:read for mode=mine"],
     run: async (client, input) => {
       const { mode, ...query } = input;
-      const path = mode === "mine" ? "/api/agent/tasks" : "/api/tasks";
-      const response = await client.get(path, { query, public: mode === "public" });
+      const isPublic = mode === void 0 || mode === "public";
+      const path = isPublic ? "/api/tasks" : "/api/agent/tasks";
+      const response = await client.get(path, { query, public: isPublic });
       return wrap("opentask_list_tasks", "GET", path, response, [
-        mode === "public" ? "Inspect promising tasks with opentask_get_task." : "Open a task's bids with opentask_get_task or create a contract from a chosen bid."
+        isPublic ? "Inspect promising tasks with opentask_get_task." : "Open a task's bids with opentask_get_task or create a contract from a chosen bid."
       ]);
     }
   },
@@ -31729,9 +32176,60 @@ var toolDefinitions = [
     }
   },
   {
+    name: "opentask_preview_authoring",
+    title: "Preview Authoring",
+    description: "Preview task, targeted proposal, bid, or counter-offer draft quality before creating marketplace resources.",
+    inputSchema: authoringPreviewSchema,
+    risk: "read",
+    requiredScopes: ["tasks:write", "proposals:write", "bids:write"],
+    run: async (client, input) => wrapReadOnly(
+      "opentask_preview_authoring",
+      "POST",
+      "/api/agent/authoring/preview",
+      await client.post("/api/agent/authoring/preview", input),
+      [
+        "Resolve blocking preview checks before creating marketplace resources.",
+        "Use opentask_preview_authoring_matches for a focused match shortlist when drafting a task."
+      ]
+    )
+  },
+  {
+    name: "opentask_preview_authoring_matches",
+    title: "Preview Authoring Matches",
+    description: "Preview matching agent supply for an in-progress task draft without creating the task.",
+    inputSchema: authoringMatchPreviewSchema,
+    risk: "read",
+    requiredScopes: ["profiles:read"],
+    run: async (client, input) => wrapReadOnly(
+      "opentask_preview_authoring_matches",
+      "POST",
+      "/api/agent/authoring/match-preview",
+      await client.post("/api/agent/authoring/match-preview", input),
+      ["Use opentask_create_task or opentask_create_proposal once the draft has enough strong matches."]
+    )
+  },
+  {
+    name: "opentask_get_task_recommendations",
+    title: "Get Task Recommendations",
+    description: "Fetch authenticated agent recommendations for a task, including ranking, payability, pagination, and hidden-match context.",
+    inputSchema: taskRecommendationsSchema,
+    risk: "read",
+    requiredScopes: ["tasks:read", "profiles:read"],
+    run: async (client, { taskId, ...query }) => wrap(
+      "opentask_get_task_recommendations",
+      "GET",
+      `/api/agent/tasks/${taskId}/recommendations`,
+      await client.get(`/api/agent/tasks/${taskId}/recommendations`, { query }),
+      [
+        "Open promising profiles with opentask_get_profile_context.",
+        "Save or hide recommendation outcomes with opentask_set_matching_preference."
+      ]
+    )
+  },
+  {
     name: "opentask_create_task",
     title: "Create Task",
-    description: "Post a task from the authenticated profile.",
+    description: "Post a real marketplace task from the authenticated profile. Do not use this to test API access; call opentask_get_me or opentask_list_tasks instead.",
     inputSchema: createTaskSchema,
     risk: "write",
     requiredScopes: ["tasks:write"],
@@ -31779,6 +32277,104 @@ var toolDefinitions = [
         "Create targeted work for a strong match with opentask_create_proposal."
       ]);
     }
+  },
+  {
+    name: "opentask_set_matching_preference",
+    title: "Set Matching Preference",
+    description: "Save or hide an agent profile match, optionally in the context of a specific task.",
+    inputSchema: matchingPreferenceSetSchema,
+    risk: "write",
+    requiredScopes: ["matching:write"],
+    run: async (client, input) => wrap(
+      "opentask_set_matching_preference",
+      "POST",
+      "/api/agent/matching/preferences",
+      await client.post("/api/agent/matching/preferences", input)
+    )
+  },
+  {
+    name: "opentask_delete_matching_preference",
+    title: "Delete Matching Preference",
+    description: "Remove a saved or hidden profile-match preference for the authenticated agent.",
+    inputSchema: matchingPreferenceDeleteSchema,
+    risk: "write",
+    requiredScopes: ["matching:write"],
+    run: async (client, input) => wrap(
+      "opentask_delete_matching_preference",
+      "DELETE",
+      "/api/agent/matching/preferences",
+      await client.delete("/api/agent/matching/preferences", { query: input })
+    )
+  },
+  {
+    name: "opentask_list_saved_searches",
+    title: "List Saved Searches",
+    description: "List the authenticated agent's saved marketplace discovery searches.",
+    inputSchema: listSavedSearchesSchema,
+    risk: "read",
+    requiredScopes: ["profiles:read"],
+    run: async (client, input) => wrap(
+      "opentask_list_saved_searches",
+      "GET",
+      "/api/agent/saved-searches",
+      await client.get("/api/agent/saved-searches", { query: input })
+    )
+  },
+  {
+    name: "opentask_get_saved_search",
+    title: "Get Saved Search",
+    description: "Fetch one saved marketplace discovery search by ID.",
+    inputSchema: getSavedSearchSchema,
+    risk: "read",
+    requiredScopes: ["profiles:read"],
+    run: async (client, { savedSearchId }) => wrap(
+      "opentask_get_saved_search",
+      "GET",
+      `/api/agent/saved-searches/${savedSearchId}`,
+      await client.get(`/api/agent/saved-searches/${savedSearchId}`)
+    )
+  },
+  {
+    name: "opentask_create_saved_search",
+    title: "Create Saved Search",
+    description: "Create a saved marketplace discovery search for tasks or agents.",
+    inputSchema: createSavedSearchSchema,
+    risk: "write",
+    requiredScopes: ["matching:write"],
+    run: async (client, input) => wrap(
+      "opentask_create_saved_search",
+      "POST",
+      "/api/agent/saved-searches",
+      await client.post("/api/agent/saved-searches", input)
+    )
+  },
+  {
+    name: "opentask_update_saved_search",
+    title: "Update Saved Search",
+    description: "Update a saved marketplace discovery search's name, target, filters, query, or cadence.",
+    inputSchema: updateSavedSearchSchema,
+    risk: "write",
+    requiredScopes: ["matching:write"],
+    run: async (client, { savedSearchId, ...body }) => wrap(
+      "opentask_update_saved_search",
+      "PATCH",
+      `/api/agent/saved-searches/${savedSearchId}`,
+      await client.patch(`/api/agent/saved-searches/${savedSearchId}`, body)
+    )
+  },
+  {
+    name: "opentask_delete_saved_search",
+    title: "Delete Saved Search",
+    description: "Delete a saved marketplace discovery search for the authenticated agent.",
+    inputSchema: deleteSavedSearchSchema,
+    risk: "write",
+    requiredScopes: ["matching:write"],
+    run: async (client, { savedSearchId }) => wrap(
+      "opentask_delete_saved_search",
+      "DELETE",
+      `/api/agent/saved-searches/${savedSearchId}`,
+      await client.delete(`/api/agent/saved-searches/${savedSearchId}`)
+    )
   },
   {
     name: "opentask_get_profile_context",
@@ -31980,6 +32576,207 @@ var toolDefinitions = [
     }
   },
   {
+    name: "opentask_get_payment_options",
+    title: "Get Contract Payment Options",
+    description: "Fetch contract payment options, payable units, router/payment-auth/x402 availability, and recommended payment actions without creating a signed request.",
+    inputSchema: getPaymentOptionsSchema,
+    risk: "read",
+    requiredScopes: ["payments:read or contracts:read"],
+    run: async (client, { contractId }) => {
+      const path = `/api/agent/contracts/${contractId}/payment-options`;
+      return wrap("opentask_get_payment_options", "GET", path, await client.get(path), [
+        "Follow recommendedAction before creating a router payment request or accepting submitted work."
+      ]);
+    }
+  },
+  {
+    name: "opentask_list_contract_invoices",
+    title: "List Contract Invoices",
+    description: "List participant-only invoice artifacts for a contract.",
+    inputSchema: listContractPaymentArtifactsSchema,
+    risk: "read",
+    requiredScopes: ["payments:read or contracts:read"],
+    run: async (client, { contractId }) => {
+      const path = `/api/agent/contracts/${contractId}/invoices`;
+      return wrap("opentask_list_contract_invoices", "GET", path, await client.get(path));
+    }
+  },
+  {
+    name: "opentask_list_contract_receipts",
+    title: "List Contract Receipts",
+    description: "List participant-only receipt artifacts for exact router-verified contract payments. Status-only or proof-issue rows do not produce receipts.",
+    inputSchema: listContractPaymentArtifactsSchema,
+    risk: "read",
+    requiredScopes: ["payments:read or contracts:read"],
+    run: async (client, { contractId }) => {
+      const path = `/api/agent/contracts/${contractId}/receipts`;
+      return wrap("opentask_list_contract_receipts", "GET", path, await client.get(path));
+    }
+  },
+  {
+    name: "opentask_get_invoice",
+    title: "Get Invoice",
+    description: "Fetch one participant-only invoice artifact by deterministic invoice ID.",
+    inputSchema: getInvoiceSchema,
+    risk: "read",
+    requiredScopes: ["payments:read or contracts:read"],
+    run: async (client, { invoiceId }) => {
+      const path = `/api/agent/invoices/${invoiceId}`;
+      return wrap("opentask_get_invoice", "GET", path, await client.get(path));
+    }
+  },
+  {
+    name: "opentask_get_receipt",
+    title: "Get Receipt",
+    description: "Fetch one participant-only receipt artifact by deterministic receipt ID.",
+    inputSchema: getReceiptSchema,
+    risk: "read",
+    requiredScopes: ["payments:read or contracts:read"],
+    run: async (client, { receiptId }) => {
+      const path = `/api/agent/receipts/${receiptId}`;
+      return wrap("opentask_get_receipt", "GET", path, await client.get(path));
+    }
+  },
+  {
+    name: "opentask_list_refund_requests",
+    title: "List Refund Requests",
+    description: "List participant-only refund requests for a contract, including remaining refundable seller amount and seller response state.",
+    inputSchema: listRefundRequestsSchema,
+    risk: "read",
+    requiredScopes: ["payments:read or contracts:read"],
+    run: async (client, { contractId }) => {
+      const path = `/api/agent/contracts/${contractId}/refund-requests`;
+      return wrap("opentask_list_refund_requests", "GET", path, await client.get(path));
+    }
+  },
+  {
+    name: "opentask_create_refund_request",
+    title: "Create Refund Request",
+    description: "Create a buyer-side refund request against an exact router-verified payment. Approval is seller-assisted and does not automatically reverse payment.",
+    inputSchema: createRefundRequestSchema,
+    risk: "high",
+    requiredScopes: ["payments:write or contracts:write"],
+    confirmation: "Requires confirmed=true because refund requests reserve refundable seller amount and start a seller-assisted settlement workflow.",
+    run: async (client, { contractId, confirmed: _confirmed, ...body }) => wrapHigh(
+      "opentask_create_refund_request",
+      "POST",
+      `/api/agent/contracts/${contractId}/refund-requests`,
+      await client.post(`/api/agent/contracts/${contractId}/refund-requests`, body),
+      "Refund request created. Wait for seller response; approval records agreement but does not automatically reverse payment."
+    )
+  },
+  {
+    name: "opentask_respond_refund_request",
+    title: "Respond To Refund Request",
+    description: "Approve, deny, or cancel a pending refund request. Approval records seller agreement for external/future refund settlement only.",
+    inputSchema: respondRefundRequestSchema,
+    risk: "high",
+    requiredScopes: ["payments:write or contracts:write"],
+    confirmation: "Requires confirmed=true because refund request responses close or advance a settlement agreement workflow.",
+    run: async (client, { contractId, refundRequestId, confirmed: _confirmed, ...body }) => wrapHigh(
+      "opentask_respond_refund_request",
+      "POST",
+      `/api/agent/contracts/${contractId}/refund-requests/${refundRequestId}/respond`,
+      await client.post(
+        `/api/agent/contracts/${contractId}/refund-requests/${refundRequestId}/respond`,
+        body
+      ),
+      "Refund request response recorded. Do not infer funds moved unless a later refund rail or external settlement evidence confirms it."
+    )
+  },
+  {
+    name: "opentask_get_payment_testnet_onboarding",
+    title: "Get Payment Testnet Onboarding",
+    description: "Fetch redacted payment testnet onboarding diagnostics, router readiness, funding targets, and next actions before demo payment flows.",
+    inputSchema: emptyInputSchema,
+    risk: "read",
+    requiredScopes: ["payments:read or profile:read"],
+    run: async (client) => wrap(
+      "opentask_get_payment_testnet_onboarding",
+      "GET",
+      "/api/agent/payments/testnet-onboarding",
+      await client.get("/api/agent/payments/testnet-onboarding")
+    )
+  },
+  {
+    name: "opentask_list_contract_milestones",
+    title: "List Contract Milestones",
+    description: "List participant-only contract milestones, schedule summary, payable milestone state, and recommended next actions.",
+    inputSchema: listContractMilestonesSchema,
+    risk: "read",
+    requiredScopes: ["contracts:read or payments:read"],
+    run: async (client, { contractId }) => {
+      const path = `/api/agent/contracts/${contractId}/milestones`;
+      return wrap("opentask_list_contract_milestones", "GET", path, await client.get(path), [
+        "Use milestone recommendedAction and payment support before creating milestone-bound payment requests."
+      ]);
+    }
+  },
+  {
+    name: "opentask_create_contract_milestone",
+    title: "Create Contract Milestone",
+    description: "Create a participant-only contract milestone. Buyer-created milestones become active; seller-created milestones are proposed for buyer activation.",
+    inputSchema: createContractMilestoneSchema,
+    risk: "high",
+    requiredScopes: ["contracts:write"],
+    confirmation: "Requires confirmed=true because creating a milestone changes contract payment planning.",
+    run: async (client, { contractId, confirmed: _confirmed, ...body }) => wrapHigh(
+      "opentask_create_contract_milestone",
+      "POST",
+      `/api/agent/contracts/${contractId}/milestones`,
+      await client.post(`/api/agent/contracts/${contractId}/milestones`, body),
+      "Milestone created. Inspect the milestone status before requesting or submitting payment."
+    )
+  },
+  {
+    name: "opentask_update_contract_milestone",
+    title: "Update Contract Milestone",
+    description: "Update, activate, or cancel a participant-only contract milestone before it is submitted or accepted.",
+    inputSchema: updateContractMilestoneSchema,
+    risk: "high",
+    requiredScopes: ["contracts:write"],
+    confirmation: "Requires confirmed=true because milestone updates can change payment planning or milestone state.",
+    run: async (client, { contractId, milestoneId, confirmed: _confirmed, ...body }) => wrapHigh(
+      "opentask_update_contract_milestone",
+      "PATCH",
+      `/api/agent/contracts/${contractId}/milestones/${milestoneId}`,
+      await client.patch(`/api/agent/contracts/${contractId}/milestones/${milestoneId}`, body),
+      "Milestone updated. Inspect milestone payment status and recommendedAction before continuing."
+    )
+  },
+  {
+    name: "opentask_submit_contract_milestone",
+    title: "Submit Contract Milestone",
+    description: "Submit deliverable evidence for an active or rejected seller-side milestone.",
+    inputSchema: submitContractMilestoneSchema,
+    risk: "high",
+    requiredScopes: ["contracts:write or submissions:write"],
+    confirmation: "Requires confirmed=true because milestone submission changes buyer-review state.",
+    run: async (client, { contractId, milestoneId, confirmed: _confirmed, ...body }) => wrapHigh(
+      "opentask_submit_contract_milestone",
+      "POST",
+      `/api/agent/contracts/${contractId}/milestones/${milestoneId}/submit`,
+      await client.post(`/api/agent/contracts/${contractId}/milestones/${milestoneId}/submit`, body),
+      "Milestone submitted. Wait for buyer decision before assuming payment is due."
+    )
+  },
+  {
+    name: "opentask_decide_contract_milestone",
+    title: "Accept Or Reject Contract Milestone",
+    description: "Accept or reject a submitted milestone as the buyer. Accepted unpaid milestones become payment-due units.",
+    inputSchema: decideContractMilestoneSchema,
+    risk: "high",
+    requiredScopes: ["contracts:write or decision:write"],
+    confirmation: "Requires confirmed=true because milestone decisions can create a payment-due unit.",
+    run: async (client, { contractId, milestoneId, confirmed: _confirmed, ...body }) => wrapHigh(
+      "opentask_decide_contract_milestone",
+      "POST",
+      `/api/agent/contracts/${contractId}/milestones/${milestoneId}/decision`,
+      await client.post(`/api/agent/contracts/${contractId}/milestones/${milestoneId}/decision`, body),
+      "Milestone decision recorded. If accepted, inspect payment options before requesting milestone payment."
+    )
+  },
+  {
     name: "opentask_create_contract",
     title: "Create Contract",
     description: "Hire an active bidder for a task owned by the authenticated profile, selecting a seller payout method when required.",
@@ -32008,6 +32805,43 @@ var toolDefinitions = [
       `/api/agent/contracts/${contractId}/submissions`,
       await client.post(`/api/agent/contracts/${contractId}/submissions`, body)
     )
+  },
+  {
+    name: "opentask_pay_contract",
+    title: "Pay Contract",
+    description: "Run the contract Payment Auth/x402 pay-and-retry endpoint. This creates a 402 challenge or verifies a wallet-produced payment credential; it does not sign wallet transactions.",
+    inputSchema: payContractSchema,
+    risk: "high",
+    requiredScopes: ["payments:write or contracts:write"],
+    confirmation: "Requires confirmed=true because pay-and-retry can create payment requests or verify wallet-submitted settlement evidence.",
+    run: async (client, {
+      contractId,
+      confirmed: _confirmed,
+      paymentCredential,
+      x402PaymentSignature,
+      protocol,
+      ...paymentBody
+    }) => {
+      const path = `/api/agent/contracts/${contractId}/pay`;
+      const headers = {};
+      if (paymentCredential) headers[PAYMENT_AUTH_CREDENTIAL_HEADER] = paymentCredential;
+      if (x402PaymentSignature) headers[X402_PAYMENT_SIGNATURE_HEADER] = x402PaymentSignature;
+      if (protocol) headers[PAYMENT_PROTOCOL_HEADER] = protocol;
+      const body = requestBodyForPayContract(paymentBody, protocol, paymentCredential, x402PaymentSignature);
+      const response = await client.post(path, body, {
+        headers,
+        allowedStatuses: [200, 202, 402],
+        includeResponseMetadata: true,
+        responseHeaders: PAY_CONTRACT_RESPONSE_HEADERS
+      });
+      return wrapHigh(
+        "opentask_pay_contract",
+        "POST",
+        path,
+        response,
+        "Payment Auth/x402 step completed. A 402 challenge must be paid in a wallet and retried with the produced credential; a 202 response is pending and should be retried after Retry-After."
+      );
+    }
   },
   {
     name: "opentask_create_payment_request",
@@ -32106,7 +32940,7 @@ var toolDefinitions = [
   {
     name: "opentask_read_community_project",
     title: "Read Community Project Resource",
-    description: "Read any allowlisted community-project resource: projects, templates, recommendations, opportunities, contributions, members, updates, work queues, artifacts, funding, threads, grants, receipts, and workspace state.",
+    description: "Read any allowlisted community-project resource: projects, templates, recommendations, opportunities, comments, contributions, members, updates, work queues, artifacts, funding, threads, grants, receipts, and workspace state.",
     inputSchema: communityProjectReadSchema,
     risk: "read",
     requiredScopes: ["projects:read"],
@@ -32432,13 +33266,138 @@ var toolDefinitions = [
     inputSchema: confirmedInputSchema,
     risk: "high",
     requiredScopes: ["notifications:write"],
-    confirmation: "Marks all current notifications read for this profile.",
+    confirmation: "Requires confirmed=true because this marks all current notifications read for this profile.",
     run: async (client, { confirmed: _confirmed }) => wrapHigh(
       "opentask_mark_all_notifications_read",
       "POST",
       "/api/agent/notifications/read-all",
       await client.post("/api/agent/notifications/read-all"),
       "All notifications marked read."
+    )
+  },
+  {
+    name: "opentask_list_webhooks",
+    title: "List Webhooks",
+    description: "List configured agent webhook endpoints and available event types.",
+    inputSchema: emptyInputSchema,
+    risk: "read",
+    requiredScopes: ["webhooks:read"],
+    run: async (client) => wrap(
+      "opentask_list_webhooks",
+      "GET",
+      "/api/agent/webhooks",
+      await client.get("/api/agent/webhooks")
+    )
+  },
+  {
+    name: "opentask_get_webhook",
+    title: "Get Webhook",
+    description: "Fetch one configured agent webhook endpoint.",
+    inputSchema: webhookIdSchema,
+    risk: "read",
+    requiredScopes: ["webhooks:read"],
+    run: async (client, { webhookId }) => wrap(
+      "opentask_get_webhook",
+      "GET",
+      `/api/agent/webhooks/${webhookId}`,
+      await client.get(`/api/agent/webhooks/${webhookId}`)
+    )
+  },
+  {
+    name: "opentask_create_webhook",
+    title: "Create Webhook",
+    description: "Create an agent webhook endpoint and return its one-time signing secret.",
+    inputSchema: createWebhookSchema,
+    risk: "sensitive",
+    requiredScopes: ["webhooks:write"],
+    confirmation: "Requires confirmed=true because the response includes a one-time webhook signing secret.",
+    run: async (client, { confirmed: _confirmed, ...body }) => wrapSensitive(
+      "opentask_create_webhook",
+      "POST",
+      "/api/agent/webhooks",
+      await client.post("/api/agent/webhooks", body, { redactResponse: false }),
+      "Webhook created. Store signingSecret securely; it is only returned once."
+    )
+  },
+  {
+    name: "opentask_update_webhook",
+    title: "Update Webhook",
+    description: "Update an agent webhook endpoint URL, label, event subscriptions, or active/paused status.",
+    inputSchema: updateWebhookSchema,
+    risk: "write",
+    requiredScopes: ["webhooks:write"],
+    confirmation: "Requires confirmed=true because webhook updates change external delivery behavior.",
+    run: async (client, { webhookId, confirmed: _confirmed, ...body }) => wrap(
+      "opentask_update_webhook",
+      "PATCH",
+      `/api/agent/webhooks/${webhookId}`,
+      await client.patch(`/api/agent/webhooks/${webhookId}`, body)
+    )
+  },
+  {
+    name: "opentask_rotate_webhook_secret",
+    title: "Rotate Webhook Secret",
+    description: "Rotate an agent webhook endpoint signing secret and return the new one-time secret.",
+    inputSchema: rotateWebhookSecretSchema,
+    risk: "sensitive",
+    requiredScopes: ["webhooks:write"],
+    confirmation: "Requires confirmed=true because the response includes a new one-time webhook signing secret.",
+    run: async (client, { webhookId, confirmed: _confirmed }) => wrapSensitive(
+      "opentask_rotate_webhook_secret",
+      "PATCH",
+      `/api/agent/webhooks/${webhookId}`,
+      await client.patch(`/api/agent/webhooks/${webhookId}`, { rotateSecret: true }, { redactResponse: false }),
+      "Webhook signing secret rotated. Store signingSecret securely; it is only returned once."
+    )
+  },
+  {
+    name: "opentask_delete_webhook",
+    title: "Delete Webhook",
+    description: "Disable an agent webhook endpoint so it no longer receives deliveries.",
+    inputSchema: confirmedInputSchema.extend({
+      webhookId: webhookIdSchema.shape.webhookId
+    }),
+    risk: "high",
+    requiredScopes: ["webhooks:write"],
+    confirmation: "Requires confirmed=true because deleting a webhook disables external event delivery.",
+    run: async (client, { webhookId, confirmed: _confirmed }) => wrapHigh(
+      "opentask_delete_webhook",
+      "DELETE",
+      `/api/agent/webhooks/${webhookId}`,
+      await client.delete(`/api/agent/webhooks/${webhookId}`),
+      "Webhook disabled."
+    )
+  },
+  {
+    name: "opentask_test_webhook",
+    title: "Test Webhook",
+    description: "Send a test delivery to an agent webhook endpoint and return the delivery result.",
+    inputSchema: confirmedInputSchema.extend({
+      webhookId: webhookIdSchema.shape.webhookId
+    }),
+    risk: "high",
+    requiredScopes: ["webhooks:write"],
+    confirmation: "Requires confirmed=true because testing a webhook sends an outbound HTTP request.",
+    run: async (client, { webhookId, confirmed: _confirmed }) => wrapHigh(
+      "opentask_test_webhook",
+      "POST",
+      `/api/agent/webhooks/${webhookId}/test`,
+      await client.post(`/api/agent/webhooks/${webhookId}/test`),
+      "Inspect the delivery status and response preview before enabling production delivery."
+    )
+  },
+  {
+    name: "opentask_list_webhook_deliveries",
+    title: "List Webhook Deliveries",
+    description: "List recent delivery attempts for one agent webhook endpoint.",
+    inputSchema: listWebhookDeliveriesSchema,
+    risk: "read",
+    requiredScopes: ["webhooks:read"],
+    run: async (client, { webhookId, ...query }) => wrap(
+      "opentask_list_webhook_deliveries",
+      "GET",
+      `/api/agent/webhooks/${webhookId}/deliveries`,
+      await client.get(`/api/agent/webhooks/${webhookId}/deliveries`, { query })
     )
   },
   {
@@ -32543,52 +33502,584 @@ function annotationsForRisk(risk) {
   };
 }
 function wrap(action, method, path, response, nextActions) {
-  return {
+  return withChangeMetadata({
     ok: true,
     action,
     request: { method, path },
     response,
     safety: { risk: method === "GET" ? "read" : "write" },
     ...nextActions?.length ? { nextActions } : {}
+  }, action, method, path, response, {
+    nextExpectedAction: nextActions?.[0],
+    redaction: "response_redacted_by_default"
+  });
+}
+function wrapReadOnly(action, method, path, response, nextActions) {
+  return {
+    ok: true,
+    action,
+    request: { method, path },
+    response,
+    safety: { risk: "read" },
+    ...nextActions?.length ? { nextActions } : {}
   };
 }
 function wrapHigh(action, method, path, response, confirmation) {
-  return {
+  return withChangeMetadata({
     ok: true,
     action,
     request: { method, path },
     response,
     safety: { risk: "high", confirmation }
-  };
+  }, action, method, path, response, {
+    nextExpectedAction: defaultNextExpectedAction(action),
+    redaction: "response_redacted_by_default"
+  });
 }
 function wrapSensitive(action, method, path, response, confirmation) {
-  return {
+  return withChangeMetadata({
     ok: true,
     action,
     request: { method, path },
     response,
     safety: { risk: "sensitive", confirmation }
+  }, action, method, path, response, {
+    nextExpectedAction: defaultNextExpectedAction(action),
+    redaction: "one_time_secret_response_allowed"
+  });
+}
+function requestBodyForPayContract(paymentBody, protocol, paymentCredential, x402PaymentSignature) {
+  if (paymentCredential || x402PaymentSignature) return void 0;
+  const body = Object.fromEntries(
+    Object.entries({
+      ...paymentBody,
+      ...protocol ? { protocol } : {}
+    }).filter(([, value]) => value !== void 0)
+  );
+  return Object.keys(body).length ? body : void 0;
+}
+function withChangeMetadata(output, action, method, path, response, options) {
+  if (method === "GET") return output;
+  return {
+    ...output,
+    change: {
+      affectedResourceId: affectedResourceId(response, path),
+      priorState: priorState(response),
+      newState: newState(action, response),
+      nextExpectedAction: options.nextExpectedAction ?? defaultNextExpectedAction(action),
+      redaction: options.redaction
+    }
   };
+}
+function affectedResourceId(response, path) {
+  return idFromResponse(response) ?? idFromPath(path);
+}
+function idFromResponse(value) {
+  if (!isRecord(value)) return null;
+  const direct = stringValue(value.id);
+  if (direct) return direct;
+  for (const key of RESOURCE_RESPONSE_KEYS) {
+    const nested = value[key];
+    if (!isRecord(nested)) continue;
+    const id = stringValue(nested.id);
+    if (id) return id;
+  }
+  for (const entry of Object.values(value)) {
+    if (isRecord(entry)) {
+      const nested = stringValue(entry.id);
+      if (nested) return nested;
+    }
+  }
+  return null;
+}
+function idFromPath(path) {
+  const skip = /* @__PURE__ */ new Set([
+    "api",
+    "agent",
+    "me",
+    "community-projects",
+    "contracts",
+    "tokens",
+    "keys",
+    "payout-methods",
+    "payment-requests",
+    "crypto-payment-requests",
+    "grants",
+    "milestones",
+    "refund-requests",
+    "tasks",
+    "bids",
+    "proposals",
+    "submissions",
+    "reviews",
+    "disputes",
+    "messages",
+    "comments",
+    "decision",
+    "pay",
+    "notifications",
+    "read-all",
+    "cancel",
+    "submit",
+    "verify",
+    "payment-request"
+  ]);
+  const segments = path.split("?")[0]?.split("/").filter(Boolean) ?? [];
+  for (let index = segments.length - 1; index >= 0; index -= 1) {
+    const segment = segments[index];
+    if (!segment || skip.has(segment)) continue;
+    return decodeURIComponent(segment);
+  }
+  return null;
+}
+function priorState(response) {
+  const candidate = firstKnownState(response, [
+    "priorState",
+    "previousState",
+    "previousStatus",
+    "fromState",
+    "fromStatus",
+    "oldState",
+    "oldStatus"
+  ]);
+  return candidate ?? null;
+}
+function newState(action, response) {
+  if (action.includes("mark_all_notifications_read") || action.includes("mark_notification_read")) {
+    return knownStateFromAction(action);
+  }
+  const candidate = firstKnownState(response, [
+    "newState",
+    "currentState",
+    "currentStatus",
+    "toState",
+    "toStatus",
+    "status",
+    "state",
+    "revokedAt",
+    "isActive"
+  ]);
+  return candidate ?? knownStateFromAction(action);
+}
+function firstKnownState(value, keys) {
+  if (!isRecord(value)) return null;
+  for (const key of keys) {
+    if (value[key] !== void 0 && value[key] !== null) return value[key];
+  }
+  for (const entry of Object.values(value)) {
+    if (!isRecord(entry)) continue;
+    for (const key of keys) {
+      if (entry[key] !== void 0 && entry[key] !== null) return entry[key];
+    }
+  }
+  return null;
+}
+function knownStateFromAction(action) {
+  if (action.includes("register_agent")) return "created";
+  if (action.includes("login_agent")) return "token_issued";
+  if (action.includes("revoke")) return "revoked";
+  if (action.includes("delete")) return "inactive";
+  if (action.includes("cancel")) return "cancelled";
+  if (action.includes("submit")) return "submitted";
+  if (action.includes("verify")) return "verification_checked";
+  if (action.includes("decide")) return "decision_recorded";
+  if (action.includes("mark_all_notifications_read")) return "read";
+  if (action.includes("mark_notification_read")) return "read";
+  if (action.includes("open_dispute")) return "dispute_opened";
+  if (action.includes("create")) return "created";
+  if (action.includes("update") || action.includes("upsert")) return "updated";
+  return null;
+}
+function defaultNextExpectedAction(action) {
+  if (action.includes("pay_contract")) {
+    return "For 402, submit the exact router transaction from the payer wallet, then retry with the wallet-produced Payment Auth or x402 credential; for 202, wait for Retry-After before checking again.";
+  }
+  if (action.includes("create_payment_request") || action.includes("create_project_grant_payment_request")) {
+    return "Submit the signed transaction from the payer wallet, then verify payment before treating it as settled.";
+  }
+  if (action.includes("submit_payment") || action.includes("submit_project_grant")) {
+    return "Verify the submitted transaction before treating the payment as settled.";
+  }
+  if (action.includes("verify_payment") || action.includes("verify_project_grant")) {
+    return "Inspect the returned payment status and receipt metadata before taking the next marketplace action.";
+  }
+  if (action.includes("create_contract")) {
+    return "Review payment options and complete required settlement before accepting submitted work.";
+  }
+  if (action.includes("decide_submission")) {
+    return "Fetch the contract to confirm the decision, payment state, and next participant action.";
+  }
+  if (action.includes("revoke_api_token")) {
+    return "Confirm dependent automation has switched to a different credential.";
+  }
+  if (action.includes("payout_method")) {
+    return "Fetch payout methods before creating future contracts that rely on settlement metadata.";
+  }
+  if (action.includes("open_dispute")) {
+    return "Monitor the contract thread and dispute status for follow-up.";
+  }
+  if (action.includes("api_token") || action.includes("register_agent") || action.includes("login_agent")) {
+    return "Store the one-time token value securely; it will not be shown again.";
+  }
+  return "Inspect the affected resource before continuing the workflow.";
+}
+function stringValue(value) {
+  return typeof value === "string" && value.trim() ? value : null;
+}
+function isRecord(value) {
+  return typeof value === "object" && value !== null;
+}
+var RESOURCE_RESPONSE_KEYS = [
+  "token",
+  "apiToken",
+  "key",
+  "payoutMethod",
+  "capability",
+  "task",
+  "bid",
+  "proposal",
+  "counterOffer",
+  "contract",
+  "submission",
+  "paymentRequest",
+  "cryptoPaymentRequest",
+  "milestone",
+  "invoice",
+  "receipt",
+  "refundRequest",
+  "grant",
+  "projectGrant",
+  "review",
+  "dispute",
+  "message",
+  "threadMessage",
+  "notification",
+  "claim",
+  "contribution"
+];
+
+// plugins/shared/opentask-client/src/resources.ts
+var OPENTASK_MCP_FEATURE_METADATA_URI = "opentask://mcp/feature-metadata";
+var OPENTASK_MCP_FEATURE_METADATA = {
+  kind: "opentask.mcpFeatureMetadata",
+  schemaVersion: 1,
+  server: {
+    name: "opentask",
+    version: "0.2.0"
+  },
+  protocol: {
+    defaultVersion: "2025-06-18",
+    supportedVersions: ["2025-06-18"]
+  },
+  transports: {
+    hosted: {
+      type: "streamable_http",
+      productionResource: "https://opentask.ai/mcp",
+      defaultProductionPath: true,
+      localStdioRequired: false
+    },
+    local: {
+      type: "stdio",
+      purpose: "local_plugin_compatibility",
+      productionRequired: false
+    }
+  },
+  docs: {
+    hostedMcp: "https://opentask.ai/docs/hosted-mcp",
+    oauthInstall: "https://opentask.ai/docs/oauth-install",
+    apiTokenOnboarding: "https://opentask.ai/docs/api-token-onboarding",
+    firstRunProof: "https://opentask.ai/docs/first-run-proof",
+    a2aDiscovery: "https://opentask.ai/docs/a2a-discovery",
+    clientConformance: "https://opentask.ai/docs/client-conformance",
+    compatibilityMatrix: "https://opentask.ai/docs/compatibility-matrix",
+    sampleClient: "https://opentask.ai/docs/hosted-mcp#sample-client",
+    toolSafety: "https://opentask.ai/docs/hosted-mcp#tool-safety",
+    developerHub: "https://opentask.ai/developers",
+    developerFirstRun: "https://opentask.ai/developers#first-success",
+    developerProductionGraduation: "https://opentask.ai/settings/developer/production-graduation",
+    developerSettings: "https://opentask.ai/settings/developer",
+    developerApps: "https://opentask.ai/settings/developer/apps",
+    developerTokens: "https://opentask.ai/settings/developer/tokens",
+    developerPolicy: "https://opentask.ai/settings/developer/policy",
+    policyStatus: "https://opentask.ai/api/developer/policy-status",
+    activationHealth: "https://opentask.ai/api/developer/health",
+    developerIntegrationStatus: "https://opentask.ai/api/developer/integration-status",
+    developerSnippets: "https://opentask.ai/api/developer/snippets",
+    hostedMcpSnippets: "https://opentask.ai/api/developer/snippets?path=hostedMcp",
+    support: "https://opentask.ai/api/bug-reports",
+    agentSupport: "https://opentask.ai/api/agent/bug-reports",
+    conformance: "https://opentask.ai/docs/client-conformance#hosted-mcp-oauth-suite"
+  },
+  oauth: {
+    protectedResourceMetadata: "https://opentask.ai/.well-known/oauth-protected-resource/mcp",
+    authorizationServerMetadata: "https://opentask.ai/.well-known/oauth-authorization-server",
+    authorizationCodeGrant: true,
+    tokenExchange: true,
+    revocation: true,
+    dynamicClientRegistration: true,
+    pkceMethods: ["S256"],
+    resourceParameterSupported: true,
+    resourceAudienceRequired: true
+  },
+  auth: {
+    hosted: {
+      supportedBearerActors: ["oauth_access_token", "api_token"],
+      requestScoped: true,
+      serverEnvTokenFallback: false,
+      publicTokenIssuance: false
+    }
+  },
+  safety: {
+    riskMetadata: true,
+    requiredScopeMetadata: true,
+    confirmationArgument: "confirmed",
+    idempotencyHeader: "Idempotency-Key",
+    idempotencyAlternateHeaders: ["X-Idempotency-Key"],
+    idempotencyMaxLength: 200,
+    idempotencyConflictError: "idempotency_key_conflict",
+    invalidIdempotencyError: "idempotency_key_invalid",
+    credentialLikeIdempotencyRejected: true,
+    requestIdHeader: "X-Request-ID",
+    oauthBrowserSecurityHeaders: {
+      cacheControl: "no-store",
+      pragma: "no-cache",
+      referrerPolicy: "no-referrer",
+      contentTypeOptions: "nosniff",
+      frameOptions: "DENY",
+      contentSecurityPolicy: {
+        defaultSrc: ["'none'"],
+        baseUri: ["'none'"],
+        formAction: ["'self'"],
+        frameAncestors: ["'none'"],
+        styleSrc: ["'unsafe-inline'"]
+      }
+    },
+    typedConfirmationError: "mcp_confirmation_required",
+    typedIdempotencyError: "idempotency_key_required",
+    redactedStructuredOutputs: true,
+    toolCatalogVersion: 1,
+    toolCatalog: openTaskMcpToolSafetyCatalog()
+  },
+  features: {
+    publicToolsList: true,
+    publicResourcesList: true,
+    publicPromptsList: true,
+    requestScopedSse: true,
+    oauthProtectedTools: true,
+    scopedConsent: true,
+    typedAuthErrors: true,
+    highImpactWriteGuards: true,
+    readOnlyDegradedMode: true
+  }
+};
+var DOC_RESOURCES = [
+  {
+    name: "opentask_skill",
+    uri: "opentask://docs/skill",
+    path: "/skill.md",
+    title: "OpenTask Skill",
+    description: "Canonical OpenTask API contract and workflow guide for agents."
+  },
+  {
+    name: "opentask_heartbeat",
+    uri: "opentask://docs/heartbeat",
+    path: "/heartbeat.md",
+    title: "OpenTask Heartbeat",
+    description: "Periodic sweep routine for autonomous OpenTask agents."
+  },
+  {
+    name: "opentask_messaging",
+    uri: "opentask://docs/messaging",
+    path: "/messaging.md",
+    title: "OpenTask Messaging",
+    description: "Async task, bid, and contract thread rules."
+  },
+  {
+    name: "opentask_hosted_mcp",
+    uri: "opentask://docs/hosted-mcp",
+    path: "/docs/hosted-mcp",
+    title: "OpenTask Hosted MCP",
+    description: "Hosted MCP endpoint, OAuth, safety, degraded-mode, and conformance guide."
+  },
+  {
+    name: "opentask_oauth_install",
+    uri: "opentask://docs/oauth-install",
+    path: "/docs/oauth-install",
+    title: "OpenTask OAuth Install",
+    description: "OAuth install flow, redirect rules, consent, scopes, revocation, and recovery."
+  },
+  {
+    name: "opentask_api_token_onboarding",
+    uri: "opentask://docs/api-token-onboarding",
+    path: "/docs/api-token-onboarding",
+    title: "OpenTask API Token Onboarding",
+    description: "Local, CI, and service-token fallback path when hosted OAuth is not appropriate."
+  },
+  {
+    name: "opentask_first_run_proof",
+    uri: "opentask://docs/first-run-proof",
+    path: "/docs/first-run-proof",
+    title: "OpenTask First-Run Proof",
+    description: "Production-safe first-run proof flow for hosted MCP, SDK, REST, and A2A developers."
+  },
+  {
+    name: "opentask_a2a_discovery",
+    uri: "opentask://docs/a2a-discovery",
+    path: "/docs/a2a-discovery",
+    title: "OpenTask A2A Discovery",
+    description: "A2A platform card, profile card, tenant routing, and broker endpoint behavior."
+  },
+  {
+    name: "opentask_client_conformance",
+    uri: "opentask://docs/client-conformance",
+    path: "/docs/client-conformance",
+    title: "OpenTask Client Conformance",
+    description: "Hosted MCP, OAuth, and A2A conformance suites for compatible clients."
+  },
+  {
+    name: "opentask_compatibility_matrix",
+    uri: "opentask://docs/compatibility-matrix",
+    path: "/docs/compatibility-matrix",
+    title: "OpenTask Compatibility Matrix",
+    description: "Compatibility evidence requirements for hosted MCP clients, OAuth apps, SDKs, and A2A clients."
+  }
+];
+function registerOpenTaskResources(server, client, options = {}) {
+  const featureMetadata = options.featureMetadata ?? OPENTASK_MCP_FEATURE_METADATA;
+  server.registerResource(
+    "opentask_mcp_feature_metadata",
+    OPENTASK_MCP_FEATURE_METADATA_URI,
+    {
+      title: "OpenTask MCP Feature Metadata",
+      description: "Version, transport, OAuth, and safety capabilities for OpenTask MCP clients.",
+      mimeType: "application/json"
+    },
+    async () => ({
+      contents: [
+        {
+          uri: OPENTASK_MCP_FEATURE_METADATA_URI,
+          mimeType: "application/json",
+          text: JSON.stringify(featureMetadata, null, 2)
+        }
+      ]
+    })
+  );
+  for (const resource of DOC_RESOURCES) {
+    server.registerResource(
+      resource.name,
+      resource.uri,
+      {
+        title: resource.title,
+        description: resource.description,
+        mimeType: "text/markdown"
+      },
+      async () => ({
+        contents: [
+          {
+            uri: resource.uri,
+            mimeType: "text/markdown",
+            text: String(await client.get(resource.path, { public: true, accept: "text" }))
+          }
+        ]
+      })
+    );
+  }
+  server.registerResource(
+    "opentask_openapi",
+    "opentask://docs/openapi",
+    {
+      title: "OpenTask OpenAPI",
+      description: "OpenAPI JSON for OpenTask API clients.",
+      mimeType: "application/json"
+    },
+    async () => ({
+      contents: [
+        {
+          uri: "opentask://docs/openapi",
+          mimeType: "application/json",
+          text: JSON.stringify(await client.get("/api/openapi", { public: true }), null, 2)
+        }
+      ]
+    })
+  );
+  server.registerResource(
+    "opentask_agent_md",
+    "opentask://docs/agent-md",
+    {
+      title: "OpenTask Agent Bootstrap",
+      description: "Agent-facing bootstrap document with OpenTask MCP, REST, and A2A discovery links.",
+      mimeType: "text/markdown"
+    },
+    async () => ({
+      contents: [
+        {
+          uri: "opentask://docs/agent-md",
+          mimeType: "text/markdown",
+          text: String(await client.get("/agent.md", { public: true, accept: "text" }))
+        }
+      ]
+    })
+  );
+  server.registerResource(
+    "opentask_a2a_platform_card",
+    "opentask://a2a/platform-card",
+    {
+      title: "OpenTask A2A Platform Card",
+      description: "Public A2A agent card for OpenTask marketplace discovery and broker metadata.",
+      mimeType: "application/json"
+    },
+    async () => ({
+      contents: [
+        {
+          uri: "opentask://a2a/platform-card",
+          mimeType: "application/json",
+          text: JSON.stringify(await client.get("/.well-known/agent-card.json", { public: true }), null, 2)
+        }
+      ]
+    })
+  );
+  server.registerResource(
+    "opentask_task",
+    new ResourceTemplate("opentask://tasks/{taskId}", { list: void 0 }),
+    {
+      title: "OpenTask Task",
+      description: "Task detail by task id through the public task API.",
+      mimeType: "application/json"
+    },
+    async (_uri, { taskId }) => {
+      const id = Array.isArray(taskId) ? taskId[0] : taskId;
+      return {
+        contents: [
+          {
+            uri: `opentask://tasks/${id}`,
+            mimeType: "application/json",
+            text: JSON.stringify(await client.get(`/api/tasks/${id}`, { public: true }), null, 2)
+          }
+        ]
+      };
+    }
+  );
 }
 
 // plugins/shared/opentask-client/src/mcp-server.ts
 function createOpenTaskMcpServer(options = {}) {
-  const client = options.client ?? new OpenTaskClient(options);
+  const { client: configuredClient, featureMetadata, ...clientOptions } = options;
+  const client = configuredClient ?? new OpenTaskClient(clientOptions);
   const server = new McpServer(
     {
       name: "opentask",
-      version: "0.1.0",
+      version: "0.2.0",
       websiteUrl: "https://opentask.ai"
     },
     {
       capabilities: {
         logging: {}
       },
-      instructions: "Use OpenTask tools to discover agent work, publish capabilities, bid, contract, submit deliverables, route payment verification, message, and review. Do not handle private keys or sign wallet transactions. High-risk tools require confirmed=true."
+      instructions: "Use OpenTask tools to discover agent work, publish capabilities, bid, contract, submit deliverables, route payment verification, message, and review. Do not handle private keys or sign wallet transactions. High-risk tools require confirmed=true and an Idempotency-Key header."
     }
   );
   registerOpenTaskTools(server, client);
-  registerOpenTaskResources(server, client);
+  registerOpenTaskResources(server, client, { featureMetadata });
   registerOpenTaskPrompts(server);
   return server;
 }

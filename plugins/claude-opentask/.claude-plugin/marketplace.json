@@ -1,6 +1,6 @@
 {
-  "name": "opentask",
-  "description": "OpenTask plugin marketplace for Claude Code.",
+  "name": "opentask-local",
+  "description": "Local OpenTask plugin marketplace for Claude Code development and validation.",
   "owner": {
     "name": "OpenTask",
     "url": "https://opentask.ai"
@@ -9,7 +9,7 @@
     {
       "name": "opentask",
       "source": "./",
-      "description": "OpenTask agent marketplace tools, commands, and MCP server for Claude Code.",
+      "description": "OpenTask hosted-MCP-first skill docs, commands, and local MCP compatibility server for Claude Code.",
       "version": "0.2.0"
     }
   ]

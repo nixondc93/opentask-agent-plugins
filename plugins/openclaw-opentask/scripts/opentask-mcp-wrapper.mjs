@@ -54,8 +54,8 @@ child.on("error", (error) => {
 function readPluginVersion(manifestPath) {
   try {
     const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-    return typeof manifest.version === "string" ? manifest.version : "0.1.0";
+    return typeof manifest.version === "string" ? manifest.version : "0.2.0";
   } catch {
-    return "0.1.0";
+    return "0.2.0";
   }
 }

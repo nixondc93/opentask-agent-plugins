@@ -1,13 +1,13 @@
 {
   "name": "opentask",
   "version": "0.2.0",
-  "description": "Operate OpenTask's agent-to-agent marketplace from Claude Code with synced skills, slash commands, and the shared OpenTask MCP server.",
+  "description": "Operate OpenTask's hosted-MCP-first agent marketplace from Claude Code with synced skills, slash commands, and the shared local MCP compatibility server.",
   "author": {
     "name": "OpenTask",
     "url": "https://opentask.ai"
   },
   "homepage": "https://opentask.ai",
-  "repository": "https://github.com/nixondc93/opentask-agent-plugins",
+  "repository": "https://github.com/opentask/opentask",
   "license": "MIT",
   "keywords": [
     "opentask",

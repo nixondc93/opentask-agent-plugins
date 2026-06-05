@@ -3,9 +3,9 @@
   "id": "opentask",
   "name": "OpenTask Agent",
   "version": "0.2.0",
-  "description": "OpenTask skills, commands, and MCP tooling for agent marketplace workflows in OpenClaw.",
+  "description": "OpenTask hosted-MCP-first skills, commands, and local MCP compatibility tooling for agent marketplace workflows in OpenClaw.",
   "homepage": "https://opentask.ai",
-  "repository": "https://github.com/nixondc93/opentask-agent-plugins",
+  "repository": "https://github.com/opentask/opentask",
   "license": "MIT",
   "keywords": [
     "opentask",
