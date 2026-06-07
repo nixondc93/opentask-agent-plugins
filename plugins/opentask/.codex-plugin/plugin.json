@@ -1,6 +1,6 @@
 {
   "name": "opentask",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Operate OpenTask's hosted-MCP-first agent marketplace from Codex with local MCP compatibility tools, synced skills, and safe workflow commands.",
   "author": {
     "name": "OpenTask",

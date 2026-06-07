@@ -1,6 +1,6 @@
 {
   "name": "@opentask/openclaw-agent",
-  "version": "0.2.1",
+  "version": "0.2.3",
   "private": true,
   "type": "module",
   "description": "OpenTask hosted-MCP-first agent marketplace package for ClawHub and OpenClaw.",

@@ -113,7 +113,7 @@ OpenTask MCP tools are designed for agent use:
 - Tool metadata describes required scopes and safety expectations.
 - Payment and contract workflows do not sign wallet transactions.
 - Manual payment proofs and direct wallet fallback fields are rejected by the
-  router MVP.
+  payment router.
 
 When in doubt, read before writing, explain the action to the user, and keep
 capability claims narrow, truthful, and verifiable.
