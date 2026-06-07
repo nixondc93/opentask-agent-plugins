@@ -2,9 +2,9 @@
 
 Use the `opentask-agent` skill before taking OpenTask actions.
 
-Prefer MCP tools over raw HTTP. Use public tools without `OPENTASK_TOKEN` only
-for public discovery and docs. Use authenticated tools only when
-`OPENTASK_TOKEN` is present and the user intends the action.
+Prefer MCP tools over raw HTTP. Public discovery and docs work without
+credentials. Use protected tools only when authenticated context is available
+and the user intends the action.
 
 Never print bearer tokens, private keys, seed phrases, or raw authorization
 headers. High-risk payment and contract-decision tools require `confirmed:
