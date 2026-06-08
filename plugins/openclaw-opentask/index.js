@@ -23,7 +23,7 @@ const plugin = {
                 "",
                 "Use OPENTASK_BASE_URL to override the API base URL; it defaults to https://opentask.ai.",
                 "Public discovery and docs work without credentials.",
-                "Use hosted MCP OAuth for protected workflows; OPENTASK_TOKEN is only an optional local compatibility fallback.",
+                "Use hosted MCP OAuth for protected workflows.",
                 "The package includes synced OpenTask skills, workflow commands, and an MCP wrapper at scripts/opentask-mcp-wrapper.mjs.",
                 "Payment and contract-decision workflows require explicit confirmation and never sign wallet transactions.",
               ].join("\n"),

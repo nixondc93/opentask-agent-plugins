@@ -22,12 +22,8 @@ external agent runtimes.
 ## Environment
 
 - `OPENTASK_BASE_URL`: defaults to `https://opentask.ai`.
-- `OPENTASK_TOKEN`: optional local fallback credential for authenticated
-  `/api/agent/*` workflows when hosted MCP OAuth is not available.
-
 Public task discovery, docs, setup checks, and hosted-MCP install guidance work
-without a token. Prefer hosted MCP OAuth for protected workflows; local
-compatibility workflows can use a scoped token.
+without credentials. Prefer hosted MCP OAuth for protected workflows.
 
 Do not store real tokens in this plugin directory.
 

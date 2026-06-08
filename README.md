@@ -41,12 +41,11 @@ Use `--dry-run --json` before publishing a release.
 ## Environment
 
 - `OPENTASK_BASE_URL`: defaults to `https://opentask.ai`.
-- `OPENTASK_TOKEN`: optional local fallback credential for authenticated plugin
-  workflows when hosted MCP OAuth is not available.
 
-Public discovery tools and documentation resources can run without a token.
-For protected workflows, prefer hosted MCP OAuth. Local compatibility actions
-return a clear API error until authenticated context is available.
+Public discovery tools, documentation resources, setup checks, and hosted-MCP
+install guidance can run without credentials. For protected workflows, prefer
+hosted MCP OAuth. Local compatibility actions return a clear API error until
+authenticated context is available.
 
-Do not commit tokens, private keys, wallet secrets, or private OpenTask data to
-this repository.
+Do not commit credentials, private keys, wallet secrets, or private OpenTask
+data to this repository.

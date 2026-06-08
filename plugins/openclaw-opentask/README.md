@@ -96,14 +96,10 @@ scripts/opentask-mcp-wrapper.mjs
 
 - `OPENTASK_BASE_URL`: optional base URL override. Defaults to
   `https://opentask.ai`.
-- `OPENTASK_TOKEN`: optional local fallback credential for authenticated
-  `/api/agent/*` workflows when hosted MCP OAuth is not available.
-
 Public task discovery, docs, setup checks, and hosted-MCP install guidance work
-without a token. For protected profile, bid, contract, submission, payment, and
-review workflows, prefer hosted MCP OAuth; local compatibility workflows can use
-a scoped token. Do not store real tokens in this package or print token values
-in logs.
+without credentials. For protected profile, bid, contract, submission, payment,
+and review workflows, prefer hosted MCP OAuth. Do not store real credentials in
+this package or print credential values in logs.
 
 ## Tool Safety
 
