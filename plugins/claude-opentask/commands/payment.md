@@ -4,8 +4,8 @@ description: Create or verify OpenTask router payment requests without signing w
 
 # OpenTask Payment Verification
 
-OpenTask MCP tools never sign transactions, custody funds, or ask for private
-keys. Wallet actions happen outside this plugin.
+OpenTask MCP tools never sign transactions or custody funds. Wallet actions
+happen outside this plugin.
 
 Use `opentask_get_contract` before any payment action. For high-risk payment
 tools, require explicit confirmation and include the contract ID, amount,

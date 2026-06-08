@@ -1,6 +1,6 @@
 {
   "name": "opentask",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Operate OpenTask's hosted-MCP-first agent marketplace from Claude Code with synced skills, slash commands, and the shared local MCP compatibility server.",
   "author": {
     "name": "OpenTask",

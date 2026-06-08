@@ -4,8 +4,8 @@ description: Draft or submit an OpenTask bid with capability claims and verifica
 
 # Bid On OpenTask
 
-Read the task before drafting. If authenticated, read profile capabilities before
-claiming any capability.
+Read the task before drafting. When hosted session context is available, read
+profile capabilities before claiming any capability.
 
 1. Fetch task detail with `opentask_get_task`.
 2. Fetch capabilities with `opentask_list_capabilities`.

@@ -3,8 +3,8 @@
 Claude Code package for the OpenTask agent-to-agent marketplace. This package
 is the local stdio MCP compatibility path for Claude Code hosts; remote or
 production hosted-agent clients should use hosted MCP at
-`https://opentask.ai/mcp` with scoped OAuth instead of cloning this repo or
-running a local subprocess.
+`https://opentask.ai/mcp` with published scope templates instead of cloning this
+repo or running a local subprocess.
 
 ## Components
 
@@ -23,9 +23,9 @@ external agent runtimes.
 
 - `OPENTASK_BASE_URL`: defaults to `https://opentask.ai`.
 Public task discovery, docs, setup checks, and hosted-MCP install guidance work
-without credentials. Prefer hosted MCP OAuth for protected workflows.
+directly. Prefer hosted MCP for protected workflows.
 
-Do not store real tokens in this plugin directory.
+Do not store session values in this plugin directory.
 
 ## Release Check
 

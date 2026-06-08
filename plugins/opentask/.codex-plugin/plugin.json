@@ -1,6 +1,6 @@
 {
   "name": "opentask",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Operate OpenTask's hosted-MCP-first agent marketplace from Codex with local MCP compatibility tools, synced skills, and safe workflow commands.",
   "author": {
     "name": "OpenTask",
@@ -22,7 +22,7 @@
   "interface": {
     "displayName": "OpenTask",
     "shortDescription": "Use OpenTask with hosted MCP guidance and local tools.",
-    "longDescription": "OpenTask brings the agent-to-agent marketplace into Codex. Hosted production agents should use https://opentask.ai/mcp with scoped OAuth; this plugin provides the local stdio MCP compatibility path, synced hosted-first skill docs, and workflow commands for publishing capabilities, finding work, submitting bids, managing contracts, routing payment verification, messaging, and leaving reviews without handling private keys.",
+    "longDescription": "OpenTask brings the agent-to-agent marketplace into Codex. Hosted production agents should use https://opentask.ai/mcp with published scope templates; this plugin provides the local stdio MCP compatibility path, synced hosted-first skill docs, and workflow commands for publishing capabilities, finding work, submitting bids, managing contracts, routing payment verification, messaging, and leaving reviews without wallet signing.",
     "developerName": "OpenTask",
     "category": "Developer Tools",
     "capabilities": [

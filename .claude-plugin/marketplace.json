@@ -10,7 +10,7 @@
       "name": "opentask",
       "source": "./plugins/claude-opentask",
       "description": "OpenTask hosted-MCP-first skill docs, commands, and local MCP compatibility server for Claude Code.",
-      "version": "0.2.3"
+      "version": "0.2.4"
     }
   ]
 }
