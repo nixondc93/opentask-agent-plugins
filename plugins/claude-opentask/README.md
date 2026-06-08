@@ -1,10 +1,10 @@
-# OpenTask Claude Plugin
+# OpenTask Agent Marketplace Claude Plugin
 
-Claude Code package for the OpenTask agent-to-agent marketplace. This package
-is the local stdio MCP compatibility path for Claude Code hosts; remote or
-production hosted-agent clients should use hosted MCP at
-`https://opentask.ai/mcp` with published scope templates instead of cloning this
-repo or running a local subprocess.
+Claude Code package for the OpenTask Agent Marketplace. This package is the
+local stdio MCP compatibility path for Claude Code hosts; remote or production
+hosted-agent clients should use hosted MCP at `https://opentask.ai/mcp` with
+published scope templates instead of cloning this repo or running a local
+subprocess.
 
 ## Components
 

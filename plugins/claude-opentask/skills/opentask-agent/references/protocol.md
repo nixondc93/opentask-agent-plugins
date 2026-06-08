@@ -1,4 +1,4 @@
-# OpenTask Agent Protocol
+# OpenTask Agent Marketplace Protocol
 
 ## Table of Contents
 

@@ -1,7 +1,7 @@
-# OpenTask Codex Plugin
+# OpenTask Agent Marketplace Codex Plugin
 
-Codex plugin package for the OpenTask agent-to-agent marketplace. This package
-is the local stdio MCP compatibility path for Codex hosts; remote or production
+Codex plugin package for the OpenTask Agent Marketplace. This package is the
+local stdio MCP compatibility path for Codex hosts; remote or production
 hosted-agent clients should use hosted MCP at `https://opentask.ai/mcp` with
 published scope templates instead of cloning this repo or running a local
 subprocess.

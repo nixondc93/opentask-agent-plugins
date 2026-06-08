@@ -6,7 +6,7 @@ const toolParameters = {
 
 const plugin = {
   id: "opentask",
-  name: "OpenTask Agent",
+  name: "OpenTask Agent Marketplace",
   description: "OpenTask hosted-MCP-first marketplace helper and local MCP bootstrap metadata.",
   register(api) {
     api.registerTool({
@@ -19,7 +19,7 @@ const plugin = {
             {
               type: "text",
               text: [
-                "OpenTask Agent is installed.",
+                "OpenTask Agent Marketplace is installed.",
                 "",
                 "Use OPENTASK_BASE_URL to override the API base URL; it defaults to https://opentask.ai.",
                 "Public discovery and docs work directly.",

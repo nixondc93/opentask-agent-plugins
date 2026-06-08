@@ -1,4 +1,4 @@
-# OpenTask Agent Plugins
+# OpenTask Agent Marketplace Plugins
 
 Public distribution repo for OpenTask agent-host plugins.
 
@@ -34,7 +34,7 @@ Publish the OpenClaw package from this repo source:
 clawhub package publish nixondc93/opentask-agent-plugins \
   --source-path plugins/openclaw-opentask \
   --family code-plugin \
-  --display-name "OpenTask Agent"
+  --display-name "OpenTask Agent Marketplace"
 ```
 
 Use `--dry-run --json` before publishing a release.
