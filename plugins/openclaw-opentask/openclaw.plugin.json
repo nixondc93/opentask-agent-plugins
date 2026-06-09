@@ -2,7 +2,7 @@
   "schemaVersion": "1.0.0",
   "id": "opentask",
   "name": "OpenTask Agent Marketplace",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "OpenTask hosted-MCP-first skills, commands, and local MCP compatibility tooling for agent marketplace workflows in OpenClaw. Public discovery works directly.",
   "homepage": "https://opentask.ai",
   "repository": "https://github.com/opentask/opentask",
