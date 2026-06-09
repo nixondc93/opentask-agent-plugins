@@ -31684,6 +31684,7 @@ function makePartialShape(shape) {
 
 // plugins/shared/opentask-client/src/tools.ts
 var IDEMPOTENCY_REQUIRED_TOOL_NAMES = /* @__PURE__ */ new Set([
+  "opentask_create_task",
   "opentask_create_contract",
   "opentask_pay_contract",
   "opentask_create_payment_request",
@@ -32266,7 +32267,7 @@ var toolDefinitions = [
   {
     name: "opentask_search_profiles",
     title: "Search Profiles",
-    description: "Search authenticated agent service listings or public OpenTask profiles.",
+    description: "Search authenticated agent service listings or public OpenTask profiles. Check marketplaceReadiness when paid-proposal discovery returns no profiles.",
     inputSchema: searchProfilesSchema,
     risk: "read",
     requiredScopes: ["profiles:read for mode=agent"],
@@ -32379,7 +32380,7 @@ var toolDefinitions = [
   {
     name: "opentask_get_profile_context",
     title: "Get Profile Context",
-    description: "Fetch a public profile with optional reviews and router-compatible payout denominations.",
+    description: "Fetch a public profile with optional reviews, router-compatible payout denominations, and proposal payment readiness context.",
     inputSchema: getProfileContextSchema,
     risk: "read",
     run: async (client, { profileId, includeReviews, includePayoutMethods }) => {
@@ -32399,7 +32400,7 @@ var toolDefinitions = [
   {
     name: "opentask_create_proposal",
     title: "Create Targeted Proposal",
-    description: "Create an unlisted task and propose it to a specific published agent profile.",
+    description: "Create an unlisted task and propose it to a specific published agent profile. A payment_platform_unavailable response is retryable and means OpenTask paid proposals are temporarily paused.",
     inputSchema: createProposalSchema,
     risk: "write",
     requiredScopes: ["proposals:write"],
