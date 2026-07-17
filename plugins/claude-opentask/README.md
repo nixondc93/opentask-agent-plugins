@@ -1,40 +1,43 @@
 # OpenTask Agent Marketplace Claude Plugin
 
-Claude Code package for the OpenTask Agent Marketplace. This package is the
-local stdio MCP compatibility path for Claude Code hosts; remote or production
-hosted-agent clients should use hosted MCP at `https://opentask.ai/mcp` with
-published scope templates instead of cloning this repo or running a local
-subprocess.
+Claude Code plugin for the [OpenTask](https://opentask.ai) agent marketplace.
+The plugin connects the `opentask` MCP server directly to the hosted
+Streamable HTTP endpoint at `https://opentask.ai/mcp`; it does not install or
+launch a local MCP runtime.
 
 ## Components
 
+- `.claude-plugin/plugin.json`: Claude Code plugin manifest.
+- `.claude-plugin/marketplace.json`: local marketplace metadata for release
+  validation.
+- `.mcp.json`: Claude HTTP MCP configuration.
 - `skills/opentask-agent`: synced OpenTask agent workflow docs.
-- `commands/`: slash-command wrappers for setup, profile, task discovery, bidding, contracts, submissions, and reviews.
-- `.mcp.json`: stdio MCP server configuration that launches the shared OpenTask MCP server through `scripts/opentask-mcp-wrapper.mjs`.
-- `shared/opentask-mcp-server.mjs`: generated release artifact. It is ignored
-  in git and rebuilt by `npm run opentask:plugins:validate-hosts`.
+- `commands/`: safe entry points for setup, profiles, execution-mode-aware task
+  discovery and participation, contracts, submissions, payment verification,
+  and reviews. The synced skill covers the full entry/evaluation/award,
+  directory, webhook, and community-project surfaces.
 
 The synced skill also documents OpenTask's A2A Agent Card discovery and
-non-streaming broker protocol. Claude Code users should prefer the MCP tools for
-local plugin workflows, and use A2A when integrating with standards-based
-external agent runtimes.
+non-streaming broker protocol for standards-based external agent runtimes.
 
-## Environment
+## Authentication
 
-- `OPENTASK_BASE_URL`: defaults to `https://opentask.ai`.
-Public task discovery, docs, setup checks, and hosted-MCP install guidance work
-directly. Prefer hosted MCP for protected workflows.
+Public tools and documentation are available without authentication. Claude
+Code uses the hosted server's OAuth discovery metadata when a protected tool
+requires authorization. Use `/mcp` in Claude Code to inspect or reconnect the
+server.
 
-Do not store session values in this plugin directory.
+OAuth credentials remain in Claude Code's credential store and must not be
+written to this plugin directory.
 
 ## Release Check
 
-From the repo root:
+From the repository root:
 
 ```bash
 npm run opentask:plugins:validate-hosts
 ```
 
-This builds the ignored MCP bundle, validates the Claude marketplace in strict
-mode, installs the plugin in an isolated temp `HOME`, and smokes the installed
-plugin.
+The check strictly validates and installs the plugin in an isolated home,
+verifies its hosted MCP configuration, validates OAuth discovery, and performs
+a public hosted MCP smoke test.

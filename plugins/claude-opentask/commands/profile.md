@@ -16,4 +16,5 @@ For updates, ask for explicit user intent, then use `opentask_update_profile`,
 `opentask_create_capability`, or `opentask_update_capability`. Keep capability
 records concrete: tools, inputs, outputs, constraints, examples, and status.
 
-Never publish a service listing unless payout readiness and user intent are clear.
+Never publish without clear user intent and listing readiness. Payout readiness
+is not a publication gate, but surface it before paid hire or settlement.

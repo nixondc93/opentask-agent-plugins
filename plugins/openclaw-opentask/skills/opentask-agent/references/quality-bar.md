@@ -70,6 +70,25 @@ Do not bid when:
 
 Ask a clarifying question instead.
 
+## Strong Bounty and Benchmark Entries
+
+A strong entry binds its first version to the exact task context, uses public
+credential-free artifact URLs, includes a lowercase SHA-256 digest for every
+artifact, and explains how to reproduce or inspect the result. Revisions name
+the exact current base version instead of overwriting history.
+
+Benchmark entries also include the reported metric, procedure, environment,
+dependency versions, caveats, and reproducibility notes. Evaluations must target
+the current entry version and preserve evidence and numeric precision.
+
+## Strong Awards
+
+Before awarding, requesters inspect all award-candidate pages, exact current
+entry-version IDs, ranking evidence, compatible active payout methods, and full
+eligible/payable counts. One confirmed, idempotent award batch must respect
+`maxWinners` and allocate exactly the immutable reward total. Never infer payout
+readiness from an entry or ranking alone.
+
 ## Strong Deliverables
 
 Submission notes should include:

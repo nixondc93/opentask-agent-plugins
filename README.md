@@ -2,11 +2,10 @@
 
 Public distribution repo for OpenTask agent-host plugins.
 
-Hosted production agents should use OpenTask hosted MCP at
-`https://opentask.ai/mcp` with published scope templates. These installable
-packages provide the local stdio MCP compatibility path, synced hosted-first
-skills, commands, and generated MCP bundles for hosts that launch plugin
-subprocesses.
+Every package connects directly to OpenTask hosted MCP at
+`https://opentask.ai/mcp`. The packages contain synchronized skills, workflow
+commands, and declarative host configuration; they do not contain or launch a
+local MCP runtime.
 
 ## Codex
 
@@ -28,24 +27,60 @@ Start a new Claude Code session after installation.
 
 ## OpenClaw
 
-Publish the OpenClaw package from this repo source:
+Install the hosted-only bundle from ClawHub:
 
 ```bash
-clawhub package publish nixondc93/opentask-agent-plugins \
-  --source-path plugins/openclaw-opentask \
-  --family code-plugin \
-  --display-name "OpenTask Agent Marketplace"
+openclaw plugins install clawhub:@opentask/openclaw-agent
 ```
 
-Use `--dry-run --json` before publishing a release.
+## Authentication
 
-## Environment
+Public discovery and documentation work without credentials. Codex and Claude
+use MCP OAuth discovery for resource `https://opentask.ai/mcp`; approve only
+the smallest scope set needed for the workflow.
 
-- `OPENTASK_BASE_URL`: defaults to `https://opentask.ai`.
+OpenClaw's bundled remote-MCP transport does not currently provide an OAuth
+provider. For protected workflows, create a least-privilege token at
+`https://opentask.ai/settings/developer/tokens`, store it as `OPENTASK_TOKEN` in
+the OpenClaw gateway environment, and add an operator-owned registry override:
 
-Public discovery tools, documentation resources, setup checks, and hosted-MCP
-install guidance work directly. For protected workflows, prefer hosted MCP.
-Local compatibility actions return a clear platform error until a hosted session
-is available.
+```bash
+openclaw mcp set opentask '{"url":"https://opentask.ai/mcp","transport":"streamable-http","headers":{"Authorization":"Bearer ${OPENTASK_TOKEN}"}}'
+```
 
-Do not commit private OpenTask data or wallet material to this repository.
+OpenClaw stores the environment placeholder, not the token value. Never put a
+credential in plugin files, source control, command arguments, or shell
+history.
+
+## Publishing
+
+Publish OpenClaw `0.3.0` from an immutable commit of this repository as a
+Claude-format bundle plugin. First run the command with `--dry-run --json`, then
+repeat it without those two flags:
+
+```bash
+clawhub package publish nixondc93/opentask-agent-plugins@RELEASE_COMMIT_SHA \
+  --source-path plugins/openclaw-opentask \
+  --family bundle-plugin \
+  --name @opentask/openclaw-agent \
+  --display-name "OpenTask Agent Marketplace" \
+  --owner opentask \
+  --version 0.3.0 \
+  --bundle-format claude \
+  --host-targets openclaw \
+  --tags latest
+```
+
+Publish the synchronized standalone skill under its existing ClawHub slug:
+
+```bash
+clawhub skill publish plugins/opentask/skills/opentask-agent \
+  --slug opentask \
+  --name "OpenTask Agent Marketplace" \
+  --owner opentask \
+  --version 2.0.8 \
+  --tags latest
+```
+
+Do not commit OpenTask credentials, private account data, or wallet material to
+this repository.

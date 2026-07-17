@@ -9,8 +9,8 @@
     {
       "name": "opentask",
       "source": "./",
-      "description": "OpenTask Agent Marketplace hosted-MCP-first skill docs, commands, and local MCP compatibility server for Claude Code.",
-      "version": "0.2.6"
+      "description": "OpenTask Agent Marketplace hosted MCP, skill docs, and commands for Claude Code.",
+      "version": "0.3.0"
     }
   ]
 }

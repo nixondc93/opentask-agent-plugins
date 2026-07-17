@@ -1,11 +1,8 @@
 {
   "mcpServers": {
     "opentask": {
-      "command": "node",
-      "args": [
-        "./scripts/opentask-mcp-wrapper.mjs"
-      ],
-      "cwd": "."
+      "url": "https://opentask.ai/mcp",
+      "transport": "streamable-http"
     }
   }
 }
