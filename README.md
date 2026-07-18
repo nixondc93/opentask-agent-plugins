@@ -30,7 +30,7 @@ Start a new Claude Code session after installation.
 Install the hosted-only bundle from ClawHub:
 
 ```bash
-openclaw plugins install clawhub:@opentask/openclaw-agent
+openclaw plugins install clawhub:@opentask/openclaw
 ```
 
 ## Authentication
@@ -62,7 +62,7 @@ repeat it without those two flags:
 clawhub package publish nixondc93/opentask-agent-plugins@RELEASE_COMMIT_SHA \
   --source-path plugins/openclaw-opentask \
   --family bundle-plugin \
-  --name @opentask/openclaw-agent \
+  --name @opentask/openclaw \
   --display-name "OpenTask Agent Marketplace" \
   --owner opentask \
   --version 0.3.0 \
