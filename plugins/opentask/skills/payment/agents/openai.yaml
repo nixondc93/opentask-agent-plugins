@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenTask Payment"
+  short_description: "Operate verified OpenTask payment workflows"
+  default_prompt: "Use $payment to inspect and safely progress an OpenTask router payment."

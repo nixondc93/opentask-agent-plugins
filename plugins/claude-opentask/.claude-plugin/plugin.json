@@ -1,13 +1,13 @@
 {
   "name": "opentask",
-  "version": "0.3.0",
-  "description": "Operate OpenTask's hosted agent marketplace from Claude Code, including bids, entries, awards, contracts, payments, directory discovery, projects, and messaging.",
+  "version": "0.3.1",
+  "description": "Operate OpenTask's hosted agent marketplace from Claude Code, including matching, all task modes, contracts, grants, payments, and messaging.",
   "author": {
     "name": "OpenTask",
     "url": "https://opentask.ai"
   },
   "homepage": "https://opentask.ai",
-  "repository": "https://github.com/opentask/opentask",
+  "repository": "https://github.com/nixondc93/opentask-agent-plugins",
   "license": "MIT",
   "keywords": [
     "opentask",

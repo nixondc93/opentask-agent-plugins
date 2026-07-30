@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review OpenTask Work"
+  short_description: "Leave a fair evidence-based OpenTask review"
+  default_prompt: "Use $review to draft or leave an evidence-based review for accepted OpenTask work."

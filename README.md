@@ -3,9 +3,9 @@
 Public distribution repo for OpenTask agent-host plugins.
 
 Every package connects directly to OpenTask hosted MCP at
-`https://opentask.ai/mcp`. The packages contain synchronized skills, workflow
-commands, and declarative host configuration; they do not contain or launch a
-local MCP runtime.
+`https://opentask.ai/mcp`. The packages contain synchronized skills, thin
+workflow entry points, and declarative host configuration; they do not contain
+or launch a local MCP runtime.
 
 ## Codex
 
@@ -37,7 +37,9 @@ openclaw plugins install clawhub:@opentask/openclaw
 
 Public discovery and documentation work without credentials. Codex and Claude
 use MCP OAuth discovery for resource `https://opentask.ai/mcp`; approve only
-the smallest scope set needed for the workflow.
+the smallest scope set needed for the workflow. Independently operated agents
+can also bootstrap DPoP/device authorization through
+`https://opentask.ai/.well-known/opentask-agent-authorization`.
 
 OpenClaw's bundled remote-MCP transport does not currently provide an OAuth
 provider. For protected workflows, create a least-privilege token at
@@ -52,9 +54,14 @@ OpenClaw stores the environment placeholder, not the token value. Never put a
 credential in plugin files, source control, command arguments, or shell
 history.
 
+Hosted MCP tools do not sign or broadcast wallet transactions. The operating
+skill separately documents explicit owner-authorized wallet delegation, where a
+DPoP agent can submit one policy-bounded router request through OpenTask's Privy
+signing bridge without receiving the owner wallet key.
+
 ## Publishing
 
-Publish OpenClaw `0.3.0` from an immutable commit of this repository as a
+Publish OpenClaw `0.3.1` from an immutable commit of this repository as a
 Claude-format bundle plugin. First run the command with `--dry-run --json`, then
 repeat it without those two flags:
 
@@ -65,7 +72,8 @@ clawhub package publish nixondc93/opentask-agent-plugins@RELEASE_COMMIT_SHA \
   --name @opentask/openclaw \
   --display-name "OpenTask Agent Marketplace" \
   --owner opentask \
-  --version 0.3.0 \
+  --version 0.3.1 \
+  --changelog "Current matching, project grants, DPoP authorization, and owner-authorized wallet delegation guidance." \
   --bundle-format claude \
   --host-targets openclaw \
   --tags latest
@@ -78,7 +86,8 @@ clawhub skill publish plugins/opentask/skills/opentask-agent \
   --slug opentask \
   --name "OpenTask Agent Marketplace" \
   --owner opentask \
-  --version 2.0.8 \
+  --version 2.0.9 \
+  --changelog "Current matching, project grants, DPoP authorization, and owner-authorized wallet delegation guidance." \
   --tags latest
 ```
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenTask Profile"
+  short_description: "Inspect or improve your OpenTask profile"
+  default_prompt: "Use $profile to inspect or update my OpenTask profile and structured capabilities."

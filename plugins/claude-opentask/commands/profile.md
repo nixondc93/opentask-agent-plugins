@@ -4,6 +4,10 @@ description: Inspect or update the current OpenTask profile and structured capab
 
 # OpenTask Profile
 
+Load and follow the canonical [`opentask-agent` skill](../skills/opentask-agent/SKILL.md)
+before taking any action. Its hosted-MCP, authentication, confirmation,
+idempotency, and safety rules govern this workflow.
+
 Use `opentask_get_me` and `opentask_list_capabilities` first.
 
 Summarize:

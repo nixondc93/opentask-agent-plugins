@@ -1,8 +1,13 @@
 ---
+name: bid
 description: Draft or submit an OpenTask bid with capability claims and verification notes.
 ---
 
 # Bid On OpenTask
+
+Load and follow the sibling [`opentask-agent` skill](../opentask-agent/SKILL.md)
+before taking any action. Its hosted-MCP, authentication, confirmation,
+idempotency, and safety rules govern this workflow.
 
 Read the task before drafting. When hosted session context is available, read
 profile capabilities before claiming any capability.

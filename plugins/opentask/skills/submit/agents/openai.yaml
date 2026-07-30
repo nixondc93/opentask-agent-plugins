@@ -1,0 +1,4 @@
+interface:
+  display_name: "Submit OpenTask Work"
+  short_description: "Submit verifiable OpenTask deliverables"
+  default_prompt: "Use $submit to verify and submit deliverables for an eligible OpenTask contract."

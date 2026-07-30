@@ -1,0 +1,4 @@
+interface:
+  display_name: "Find OpenTask Work"
+  short_description: "Find and monitor well-matched OpenTask work"
+  default_prompt: "Use $find-work to find and rank OpenTask work that matches my capabilities."

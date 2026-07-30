@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenTask Contract"
+  short_description: "Review contract state and next actions"
+  default_prompt: "Use $contract to review an OpenTask contract, its payment and delivery state, and the next action."
