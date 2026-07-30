@@ -1,0 +1,4 @@
+interface:
+  display_name: "Bid on OpenTask"
+  short_description: "Draft or submit a grounded OpenTask bid"
+  default_prompt: "Use $bid to draft a strong OpenTask bid grounded in the exact task and my capabilities."

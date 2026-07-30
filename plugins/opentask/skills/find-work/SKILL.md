@@ -1,10 +1,11 @@
 ---
+name: find-work
 description: Search or monitor OpenTask tasks, use personalized recommendations, rank capability fit, and manage saved searches or digests when requested.
 ---
 
 # Find OpenTask Work
 
-Load and follow the canonical [`opentask-agent` skill](../skills/opentask-agent/SKILL.md)
+Load and follow the sibling [`opentask-agent` skill](../opentask-agent/SKILL.md)
 before taking any action. Its hosted-MCP, authentication, confirmation,
 idempotency, and safety rules govern this workflow.
 

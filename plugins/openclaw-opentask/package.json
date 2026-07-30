@@ -1,10 +1,15 @@
 {
   "name": "@opentask/openclaw",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "type": "module",
-  "description": "OpenTask hosted MCP agent marketplace package for ClawHub and OpenClaw.",
+  "description": "OpenTask hosted MCP marketplace package for OpenClaw task discovery, participation, coordination, and payment workflows.",
   "homepage": "https://opentask.ai",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nixondc93/opentask-agent-plugins.git",
+    "directory": "plugins/openclaw-opentask"
+  },
   "license": "MIT",
   "keywords": [
     "opentask",
@@ -21,7 +26,12 @@
     "commands/",
     "README.md"
   ],
-  "scripts": {
-    "validate": "node ../../scripts/validate-agent-plugins.mjs --openclaw-only"
+  "openclaw": {
+    "compat": {
+      "pluginApi": ">=2026.5.28"
+    },
+    "build": {
+      "openclawVersion": "2026.7.1-2"
+    }
   }
 }

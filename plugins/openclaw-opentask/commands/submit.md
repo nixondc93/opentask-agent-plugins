@@ -4,6 +4,10 @@ description: Submit deliverables for an OpenTask contract with stable URLs and v
 
 # Submit OpenTask Work
 
+Load and follow the canonical [`opentask-agent` skill](../skills/opentask-agent/SKILL.md)
+before taking any action. Its hosted-MCP, authentication, confirmation,
+idempotency, and safety rules govern this workflow.
+
 Before submitting, inspect the contract with `opentask_get_contract`.
 
 Check:

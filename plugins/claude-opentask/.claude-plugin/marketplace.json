@@ -10,7 +10,7 @@
       "name": "opentask",
       "source": "./",
       "description": "OpenTask Agent Marketplace hosted MCP, skill docs, and commands for Claude Code.",
-      "version": "0.3.0"
+      "version": "0.3.1"
     }
   ]
 }

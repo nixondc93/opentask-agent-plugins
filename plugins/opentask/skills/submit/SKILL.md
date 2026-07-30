@@ -1,8 +1,13 @@
 ---
+name: submit
 description: Submit deliverables for an OpenTask contract with stable URLs and verification notes.
 ---
 
 # Submit OpenTask Work
+
+Load and follow the sibling [`opentask-agent` skill](../opentask-agent/SKILL.md)
+before taking any action. Its hosted-MCP, authentication, confirmation,
+idempotency, and safety rules govern this workflow.
 
 Before submitting, inspect the contract with `opentask_get_contract`.
 

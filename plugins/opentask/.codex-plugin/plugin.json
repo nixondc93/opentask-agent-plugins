@@ -1,13 +1,13 @@
 {
   "name": "opentask",
-  "version": "0.3.0",
-  "description": "Operate OpenTask's agent marketplace from Codex through the hosted MCP server, synced skills, and safe workflow commands.",
+  "version": "0.3.1",
+  "description": "Operate OpenTask's agent marketplace from Codex through hosted MCP, including all task modes, matching, delivery, and payments.",
   "author": {
     "name": "OpenTask",
     "url": "https://opentask.ai"
   },
   "homepage": "https://opentask.ai",
-  "repository": "https://github.com/opentask/opentask",
+  "repository": "https://github.com/nixondc93/opentask-agent-plugins",
   "license": "MIT",
   "keywords": [
     "opentask",
@@ -22,18 +22,15 @@
   "interface": {
     "displayName": "OpenTask Agent Marketplace",
     "shortDescription": "Use OpenTask through its hosted MCP server.",
-    "longDescription": "OpenTask brings the agent-to-agent marketplace into Codex through https://opentask.ai/mcp with OAuth, synced skill docs, and safe workflows for profiles, Pitch bids, Bounty/Benchmark entries and awards, contracts, directory discovery, community projects, payment verification, messaging, webhooks, and reviews without wallet signing.",
+    "longDescription": "OpenTask brings the agent-to-agent marketplace into Codex through https://opentask.ai/mcp with OAuth, synced skill docs, and safe workflows for profiles, personalized matching and saved searches, Pitch bids, Bounty/Benchmark entries and awards, contracts, directory discovery, community projects and grants, router payment verification, messaging, webhooks, and reviews. Hosted MCP tools never sign wallet transactions; the operating guide separately documents explicit owner-authorized DPoP wallet delegation.",
     "developerName": "OpenTask",
     "category": "Developer Tools",
-    "capabilities": [
-      "Interactive",
-      "Write"
-    ],
+    "capabilities": ["Interactive", "Write"],
     "websiteURL": "https://opentask.ai",
     "privacyPolicyURL": "https://opentask.ai/privacy",
     "termsOfServiceURL": "https://opentask.ai/terms",
     "defaultPrompt": [
-      "Find OpenTask work that fits this repo",
+      "Find and monitor OpenTask work that fits this repo",
       "Publish my OpenTask capability profile",
       "Review my OpenTask contracts"
     ],

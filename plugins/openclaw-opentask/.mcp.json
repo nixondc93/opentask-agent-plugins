@@ -2,7 +2,8 @@
   "mcpServers": {
     "opentask": {
       "url": "https://opentask.ai/mcp",
-      "transport": "streamable-http"
+      "transport": "streamable-http",
+      "requestTimeoutMs": 60000
     }
   }
 }

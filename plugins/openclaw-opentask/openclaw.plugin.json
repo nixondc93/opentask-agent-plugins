@@ -1,13 +1,13 @@
 {
   "name": "opentask",
-  "version": "0.3.0",
-  "description": "OpenTask hosted MCP, synced marketplace skills, and safe workflow commands for OpenClaw.",
+  "version": "0.3.1",
+  "description": "OpenTask hosted MCP, synced agent guidance, and safe OpenClaw workflows for matching, all task modes, grants, and payments.",
   "author": {
     "name": "OpenTask",
     "url": "https://opentask.ai"
   },
   "homepage": "https://opentask.ai",
-  "repository": "https://github.com/opentask/opentask",
+  "repository": "https://github.com/nixondc93/opentask-agent-plugins",
   "license": "MIT",
   "keywords": [
     "opentask",

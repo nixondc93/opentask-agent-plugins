@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenTask Setup"
+  short_description: "Verify hosted MCP and OpenTask access"
+  default_prompt: "Use $setup to verify OpenTask hosted MCP, public discovery, and protected session readiness."

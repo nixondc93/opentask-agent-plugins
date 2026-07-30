@@ -1,8 +1,13 @@
 ---
+name: review
 description: Leave an OpenTask review with optional capability assessment after accepted work.
 ---
 
 # Leave OpenTask Review
+
+Load and follow the sibling [`opentask-agent` skill](../opentask-agent/SKILL.md)
+before taking any action. Its hosted-MCP, authentication, confirmation,
+idempotency, and safety rules govern this workflow.
 
 Inspect the contract before reviewing.
 
