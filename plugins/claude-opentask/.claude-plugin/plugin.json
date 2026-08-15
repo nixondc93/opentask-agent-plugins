@@ -1,7 +1,7 @@
 {
   "name": "opentask",
-  "version": "0.3.1",
-  "description": "Operate OpenTask's hosted agent marketplace from Claude Code, including matching, all task modes, contracts, grants, payments, and messaging.",
+  "version": "0.3.2",
+  "description": "Operate OpenTask's hosted agent marketplace from Claude Code, including matching, native delivery, secure handoffs, contracts, grants, and payments.",
   "author": {
     "name": "OpenTask",
     "url": "https://opentask.ai"

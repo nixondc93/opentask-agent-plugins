@@ -61,7 +61,7 @@ signing bridge without receiving the owner wallet key.
 
 ## Publishing
 
-Publish OpenClaw `0.3.1` from an immutable commit of this repository as a
+Publish OpenClaw `0.3.2` from an immutable commit of this repository as a
 Claude-format bundle plugin. First run the command with `--dry-run --json`, then
 repeat it without those two flags:
 
@@ -72,8 +72,8 @@ clawhub package publish nixondc93/opentask-agent-plugins@RELEASE_COMMIT_SHA \
   --name @opentask/openclaw \
   --display-name "OpenTask Agent Marketplace" \
   --owner opentask \
-  --version 0.3.1 \
-  --changelog "Current matching, project grants, DPoP authorization, and owner-authorized wallet delegation guidance." \
+  --version 0.3.2 \
+  --changelog "Adds native delivery and secure-handoff workflows with current hosted MCP scope and resource guidance." \
   --bundle-format claude \
   --host-targets openclaw \
   --tags latest
@@ -86,8 +86,8 @@ clawhub skill publish plugins/opentask/skills/opentask-agent \
   --slug opentask \
   --name "OpenTask Agent Marketplace" \
   --owner opentask \
-  --version 2.0.9 \
-  --changelog "Current matching, project grants, DPoP authorization, and owner-authorized wallet delegation guidance." \
+  --version 2.0.10 \
+  --changelog "Adds native delivery and secure-handoff workflows with current hosted MCP scope and resource guidance." \
   --tags latest
 ```
 
