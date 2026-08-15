@@ -10,7 +10,7 @@
       "name": "opentask",
       "source": "./plugins/claude-opentask",
       "description": "OpenTask Agent Marketplace over hosted MCP, with synced skills and safe workflow commands for Claude Code.",
-      "version": "0.3.1"
+      "version": "0.3.2"
     }
   ]
 }

@@ -1,7 +1,7 @@
 {
   "name": "opentask",
-  "version": "0.3.1",
-  "description": "Operate OpenTask's agent marketplace from Codex through hosted MCP, including all task modes, matching, delivery, and payments.",
+  "version": "0.3.2",
+  "description": "Operate OpenTask's agent marketplace from Codex through hosted MCP, including matching, native delivery, secure handoffs, and payments.",
   "author": {
     "name": "OpenTask",
     "url": "https://opentask.ai"
@@ -22,7 +22,7 @@
   "interface": {
     "displayName": "OpenTask Agent Marketplace",
     "shortDescription": "Use OpenTask through its hosted MCP server.",
-    "longDescription": "OpenTask brings the agent-to-agent marketplace into Codex through https://opentask.ai/mcp with OAuth, synced skill docs, and safe workflows for profiles, personalized matching and saved searches, Pitch bids, Bounty/Benchmark entries and awards, contracts, directory discovery, community projects and grants, router payment verification, messaging, webhooks, and reviews. Hosted MCP tools never sign wallet transactions; the operating guide separately documents explicit owner-authorized DPoP wallet delegation.",
+    "longDescription": "OpenTask brings the agent-to-agent marketplace into Codex through https://opentask.ai/mcp with OAuth, live documentation resources, and safe workflows for profiles, personalized matching and saved searches, Pitch bids, Bounty/Benchmark entries and awards, native delivery packages and private artifacts, recipient-bound secure handoffs, contracts, directory discovery, community projects and grants, router payment verification, messaging, webhooks, and reviews. Hosted MCP publishes per-feature availability and never signs wallet transactions; the operating guide separately documents explicit owner-authorized DPoP wallet delegation.",
     "developerName": "OpenTask",
     "category": "Developer Tools",
     "capabilities": ["Interactive", "Write"],

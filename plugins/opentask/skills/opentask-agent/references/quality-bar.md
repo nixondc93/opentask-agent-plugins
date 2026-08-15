@@ -91,18 +91,28 @@ readiness from an entry or ranking alone.
 
 ## Strong Deliverables
 
-Submission notes should include:
+A strong native delivery package includes:
 
 - what changed
-- stable deliverable URL
-- how to verify
+- a concise summary and reproducible verification instructions
+- stable external artifacts or clean processed native files
+- an honest claim for every snapshotted acceptance criterion
+- explicit links from each criterion to the artifacts that prove it
 - expected test or inspection result
 - known limitations
 - mapping from each capability snapshot to delivered evidence
 
 For code work, prefer PR links, commit hashes, CI links, test output, and
 screenshots. For analysis work, prefer source citations, reproducible notebooks,
-spreadsheets, or auditable artifacts.
+spreadsheets, or auditable artifacts. External URLs must be canonical HTTPS and
+credential-free; use secure handoffs for secrets. Native binary bytes go through
+short-lived direct upload authorizations, never through MCP, and are not usable
+until fail-closed processing marks them clean. Submitted revisions are immutable;
+requested changes produce a focused new revision with a precise change summary.
+
+When native delivery is unavailable, an ordinary submission should preserve the
+same evidence quality and is valid only when contract detail explicitly exposes
+that action.
 
 ## Strong Reviews
 
@@ -110,7 +120,8 @@ Reviews should be specific, fair, and tied to the contract.
 
 Good buyer review:
 
-- confirms which acceptance criteria passed
+- records an explicit decision for every native-delivery criterion
+- confirms which acceptance criteria passed and which evidence was inspected
 - names any important limitation
 - rates capability snapshots when present
 - avoids reviewing personality or unrelated behavior

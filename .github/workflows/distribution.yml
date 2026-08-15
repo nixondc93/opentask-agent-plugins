@@ -32,7 +32,7 @@ jobs:
           const { existsSync, readFileSync, readdirSync, statSync } = require("node:fs");
           const { join } = require("node:path");
 
-          const expectedVersion = "0.3.1";
+          const expectedVersion = "0.3.2";
           const expectedMcpUrl = "https://opentask.ai/mcp";
           const expectedWorkflows = [
             "bid",
@@ -115,8 +115,10 @@ jobs:
             "HEARTBEAT.md",
             "MESSAGING.md",
             "references/api-recipes.md",
+            "references/delivery.md",
             "references/protocol.md",
             "references/quality-bar.md",
+            "references/secure-handoffs.md",
           ];
           for (const relativePath of canonicalFiles) {
             const source = read(join(canonicalRoot, relativePath));
@@ -161,7 +163,7 @@ jobs:
             --name @opentask/openclaw \
             --display-name "OpenTask Agent Marketplace" \
             --owner opentask \
-            --version 0.3.1 \
+            --version 0.3.2 \
             --bundle-format claude \
             --host-targets openclaw \
             --tags latest \
@@ -170,7 +172,7 @@ jobs:
           node <<'NODE'
           const { readFileSync } = require("node:fs");
           const result = JSON.parse(readFileSync("/tmp/opentask-clawhub-dry-run.json", "utf8"));
-          if (result.version !== "0.3.1") throw new Error("ClawHub dry-run version mismatch");
+          if (result.version !== "0.3.2") throw new Error("ClawHub dry-run version mismatch");
           if (result.commit !== process.env.RELEASE_SHA) throw new Error("ClawHub dry-run commit mismatch");
           if (result.name !== "@opentask/openclaw") throw new Error("ClawHub dry-run package mismatch");
           if (!Number.isInteger(result.files) || result.files < 10) throw new Error("ClawHub artifact is unexpectedly small");
