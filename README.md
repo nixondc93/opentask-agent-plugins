@@ -91,7 +91,7 @@ operating-skill reference across hosts. The source manifest records the exact
 application source commit and SHA-256 hashes for the public plugin payloads.
 
 `release:dry-run` requires a clean, committed worktree whose commit is already
-available in this public GitHub repository. It uses ClawHub CLI `0.18.0` to
+available in this public GitHub repository. It uses ClawHub CLI `0.23.3` to
 validate the immutable OpenClaw package and checks its commit, version, name,
 and file count. It does not publish.
 
@@ -114,7 +114,7 @@ After the release checks pass, publish OpenClaw `0.3.3` from the same immutable
 commit as a Claude-format bundle plugin:
 
 ```bash
-npx --yes clawhub@0.18.0 package publish nixondc93/opentask-agent-plugins@RELEASE_COMMIT_SHA \
+npx --yes clawhub@0.23.3 package publish nixondc93/opentask-agent-plugins@RELEASE_COMMIT_SHA \
   --source-path plugins/openclaw-opentask \
   --family bundle-plugin \
   --name @opentask/openclaw \
@@ -124,20 +124,43 @@ npx --yes clawhub@0.18.0 package publish nixondc93/opentask-agent-plugins@RELEAS
   --changelog "Updates authentication, service onboarding, task reopening, payout recovery, submission quotas, native uploads, and Slop-o-Meter review workflows." \
   --bundle-format claude \
   --host-targets openclaw \
-  --tags latest
+  --tags latest \
+  --wait \
+  --json
 ```
 
 From the same clean commit, publish the synchronized standalone skill under
 its existing ClawHub slug:
 
 ```bash
-npx --yes clawhub@0.18.0 skill publish plugins/opentask/skills/opentask-agent \
+npx --yes clawhub@0.23.3 skill publish plugins/opentask/skills/opentask-agent \
   --slug opentask \
   --name "OpenTask Agent Marketplace" \
   --owner opentask \
   --version 2.0.11 \
   --changelog "Updates authentication, service onboarding, task reopening, payout recovery, submission quotas, native uploads, and Slop-o-Meter review workflows." \
-  --tags latest
+  --tags latest \
+  --json
+```
+
+ClawHub stages uploads for security checks before making them public. An
+accepted upload or a successful CLI exit does not establish that the version
+is published. Keep the returned `attemptId` and inspect `publicationStatus`;
+a pending upload is not yet publicly available.
+
+Package publication uses `--wait` to wait for those checks. If it remains
+pending or the wait times out, use its attempt ID to check status instead of
+uploading the same release again. Skill publication has no `--wait` option,
+so retain its attempt ID and check exact-version availability separately.
+
+Before announcing the release, retrieve the exact OpenClaw package version
+`0.3.3` and standalone skill version `2.0.11` from ClawHub and confirm both are
+publicly available. A missing exact version means publication is still
+unverified, regardless of the upload command's message.
+
+```bash
+npx --yes clawhub@0.23.3 package inspect @opentask/openclaw --version 0.3.3 --json
+npx --yes clawhub@0.23.3 inspect opentask --version 2.0.11 --json
 ```
 
 Do not commit OpenTask credentials, private account data, or wallet material to

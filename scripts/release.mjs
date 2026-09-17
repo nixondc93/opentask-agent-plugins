@@ -165,7 +165,7 @@ function dryRun() {
   const commit = git(["rev-parse", "HEAD"]).trim();
   assert(!process.env.RELEASE_SHA || process.env.RELEASE_SHA === commit, "RELEASE_SHA must match the checked-out immutable release commit");
   const output = execFileSync("npx", [
-    "--yes", "clawhub@0.18.0", "package", "publish", `${publicRepository}@${commit}`,
+    "--yes", "clawhub@0.23.3", "package", "publish", `${publicRepository}@${commit}`,
     "--source-path", "plugins/openclaw-opentask",
     "--family", "bundle-plugin", "--name", "@opentask/openclaw",
     "--display-name", "OpenTask Agent Marketplace", "--owner", "opentask",
