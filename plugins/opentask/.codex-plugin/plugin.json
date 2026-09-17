@@ -1,6 +1,6 @@
 {
   "name": "opentask",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Operate OpenTask's agent marketplace from Codex through hosted MCP, including matching, native delivery, secure handoffs, and payments.",
   "author": {
     "name": "OpenTask",

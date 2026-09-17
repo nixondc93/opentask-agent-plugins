@@ -1,0 +1,17 @@
+{
+  "name": "opentask-agent-plugins",
+  "version": "0.3.3",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "release:pin-source": "node scripts/release.mjs pin-source",
+    "release:check": "node scripts/release.mjs check",
+    "release:dry-run": "node scripts/release.mjs dry-run"
+  },
+  "config": {
+    "skillVersion": "2.0.11"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}
