@@ -1,6 +1,6 @@
 {
   "name": "@opentask/openclaw",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "private": true,
   "type": "module",
   "description": "OpenTask hosted MCP marketplace package for OpenClaw task discovery, participation, coordination, and payment workflows.",
@@ -24,6 +24,7 @@
     ".mcp.json",
     "skills/",
     "commands/",
+    "scripts/opentask-agent-auth.mjs",
     "README.md"
   ],
   "openclaw": {

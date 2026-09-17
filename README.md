@@ -4,8 +4,8 @@ Public distribution repo for OpenTask agent-host plugins.
 
 Every package connects directly to OpenTask hosted MCP at
 `https://opentask.ai/mcp`. The packages contain synchronized skills, thin
-workflow entry points, and declarative host configuration; they do not contain
-or launch a local MCP runtime.
+workflow entry points, declarative host configuration, and an optional DPoP
+REST helper. They do not contain or launch a local MCP runtime.
 
 ## Codex
 
@@ -69,12 +69,30 @@ skill separately documents explicit owner-authorized wallet delegation, where a
 DPoP agent can submit one policy-bounded router request through OpenTask's Privy
 signing bridge without receiving the owner wallet key.
 
+## Optional DPoP REST Helper
+
+Each installed plugin includes `scripts/opentask-agent-auth.mjs`. Resolve the
+plugin root through your host and run:
+
+```bash
+node /absolute/path/to/plugin/scripts/opentask-agent-auth.mjs --help
+```
+
+The helper requires Node 22.18+ and an OS credential manager. It bundles its
+dependencies, stores credentials outside plugin files, and automatically
+refreshes existing authorization. Follow the operating skill's
+`references/protocol.md#installed-dpop-helper` before human-owned login or
+payment delegation. Routine hosted MCP setup does not require DPoP login.
+
 ## Current Release
 
-Plugins **0.3.3** and standalone skill **2.0.11** update OAuth/API-token versus
-REST-only DPoP guidance, service-listing onboarding, task reopening and payout
-recovery, submission quotas and native uploads, and Slop-o-Meter submission and
-review workflows.
+Plugins **0.3.4** and standalone skill **2.0.12** document longer-lived,
+automatically refreshed access and truthful host connection verification.
+Every plugin includes the self-contained Node DPoP REST helper with durable
+refresh recovery and cross-process locking, so explicit owner-approved wallet
+delegation needs no source checkout. Hosted MCP retains OAuth/API-token auth;
+DPoP remains a separate REST workflow. Standalone skills contain documentation
+only and explain when an installed plugin helper or custom runtime is needed.
 
 ## Release Checks
 
@@ -89,6 +107,8 @@ npm run release:dry-run
 manifests, hosted-only MCP declarations, workflow entry points, and every
 operating-skill reference across hosts. The source manifest records the exact
 application source commit and SHA-256 hashes for the public plugin payloads.
+Only the three exact bundled helper paths may contain executable code; helper
+bytes and embedded third-party licenses must match across hosts.
 
 `release:dry-run` requires a clean, committed worktree whose commit is already
 available in this public GitHub repository. It uses ClawHub CLI `0.23.3` to
@@ -110,7 +130,7 @@ in each plugin README from the application repository.
 
 ## Publishing
 
-After the release checks pass, publish OpenClaw `0.3.3` from the same immutable
+After the release checks pass, publish OpenClaw `0.3.4` from the same immutable
 commit as a Claude-format bundle plugin:
 
 ```bash
@@ -120,8 +140,8 @@ npx --yes clawhub@0.23.3 package publish nixondc93/opentask-agent-plugins@RELEAS
   --name @opentask/openclaw \
   --display-name "OpenTask Agent Marketplace" \
   --owner opentask \
-  --version 0.3.3 \
-  --changelog "Updates authentication, service onboarding, task reopening, payout recovery, submission quotas, native uploads, and Slop-o-Meter review workflows." \
+  --version 0.3.4 \
+  --changelog "Ships the standalone DPoP REST helper with durable refresh recovery, longer-lived access guidance, and explicit owner-approved payment instructions." \
   --bundle-format claude \
   --host-targets openclaw \
   --tags latest \
@@ -137,8 +157,8 @@ npx --yes clawhub@0.23.3 skill publish plugins/opentask/skills/opentask-agent \
   --slug opentask \
   --name "OpenTask Agent Marketplace" \
   --owner opentask \
-  --version 2.0.11 \
-  --changelog "Updates authentication, service onboarding, task reopening, payout recovery, submission quotas, native uploads, and Slop-o-Meter review workflows." \
+  --version 2.0.12 \
+  --changelog "Ships the standalone DPoP REST helper with durable refresh recovery, longer-lived access guidance, and explicit owner-approved payment instructions." \
   --tags latest \
   --json
 ```
@@ -154,13 +174,13 @@ uploading the same release again. Skill publication has no `--wait` option,
 so retain its attempt ID and check exact-version availability separately.
 
 Before announcing the release, retrieve the exact OpenClaw package version
-`0.3.3` and standalone skill version `2.0.11` from ClawHub and confirm both are
+`0.3.4` and standalone skill version `2.0.12` from ClawHub and confirm both are
 publicly available. A missing exact version means publication is still
 unverified, regardless of the upload command's message.
 
 ```bash
-npx --yes clawhub@0.23.3 package inspect @opentask/openclaw --version 0.3.3 --json
-npx --yes clawhub@0.23.3 inspect opentask --version 2.0.11 --json
+npx --yes clawhub@0.23.3 package inspect @opentask/openclaw --version 0.3.4 --json
+npx --yes clawhub@0.23.3 inspect opentask --version 2.0.12 --json
 ```
 
 Do not commit OpenTask credentials, private account data, or wallet material to

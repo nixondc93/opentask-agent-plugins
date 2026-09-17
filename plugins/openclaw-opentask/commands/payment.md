@@ -42,7 +42,15 @@ delegation, use REST `GET /api/agent/wallet-delegations` and
 `paid: true` after exact `PaymentRouted` verification is settlement authority.
 Gas sponsorship is unavailable.
 
-Each write requires `confirmed: true` and one stable `idempotencyKey` per
+Use the bundled `scripts/opentask-agent-auth.mjs` from the installed plugin root
+with Node 22.18+. Follow the canonical skill's
+`references/protocol.md#installed-dpop-helper` for path resolution, one-time
+human-owned login, secure storage, and the exact delegated-payment command.
+An existing account refreshes automatically; do not repeat login for routine
+operations. REST execution sends `{ "paymentRequestId": "..." }` with one stable
+`--idempotency-key`; it uses the owner's DPoP grant, not hosted MCP authority.
+
+Each MCP write requires `confirmed: true` and one stable `idempotencyKey` per
 logical request. After the call, report the payment request ID, recommended
 action, transaction hash or verification state, and retry guidance if the API
 returns one.

@@ -64,9 +64,18 @@ function check() {
   equal(Object.keys(manifest.sha256).sort(), Object.keys(actualFiles), "Pinned source file inventory");
   for (const [path, hash] of Object.entries(actualFiles)) {
     equal(hash, manifest.sha256[path], `${path} pinned source hash`);
-    assert([".json", ".md", ".svg", ".yaml", ".yml"].includes(extname(path)),
-      `Distribution must remain declarative: ${path}`);
+    const isAuthHelper = hosts.some((host) => path === `plugins/${host}/scripts/opentask-agent-auth.mjs`);
+    assert(isAuthHelper || [".json", ".md", ".svg", ".yaml", ".yml"].includes(extname(path)),
+      `Only the source-pinned DPoP REST helper may ship executable code: ${path}`);
   }
+
+  const canonicalHelper = read("plugins/opentask/scripts/opentask-agent-auth.mjs");
+  assert(canonicalHelper.includes("Third-party licenses:"), "Bundled helper must carry third-party licenses");
+  for (const host of hosts) {
+    equal(read(`plugins/${host}/scripts/opentask-agent-auth.mjs`), canonicalHelper, `${host} helper parity`);
+  }
+  assert(json("plugins/openclaw-opentask/package.json").files.includes("scripts/opentask-agent-auth.mjs"),
+    "OpenClaw package must include its standalone DPoP REST helper");
 
   const versionPaths = [
     "plugins/opentask/.codex-plugin/plugin.json",
