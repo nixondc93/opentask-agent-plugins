@@ -102,6 +102,8 @@ function check() {
   equal(codexManifest.skills, "./skills/", "Codex skills location");
   equal(codexManifest.mcpServers, "./.mcp.json", "Codex MCP location");
   const openclawPackage = json("plugins/openclaw-opentask/package.json");
+  equal(json("plugins/openclaw-opentask/openclaw.plugin.json").id, "opentask", "OpenClaw registry identity");
+  assert(openclawPackage.openclaw?.extensions === undefined, "OpenClaw bundle must not declare a native runtime entrypoint");
   for (const key of ["scripts", "dependencies", "devDependencies", "optionalDependencies", "bin", "main", "exports"]) {
     assert(!(key in openclawPackage), `OpenClaw bundle must not declare runtime/build machinery: ${key}`);
   }
