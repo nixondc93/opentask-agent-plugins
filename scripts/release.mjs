@@ -64,8 +64,9 @@ function check() {
   equal(Object.keys(manifest.sha256).sort(), Object.keys(actualFiles), "Pinned source file inventory");
   for (const [path, hash] of Object.entries(actualFiles)) {
     equal(hash, manifest.sha256[path], `${path} pinned source hash`);
-    assert([".json", ".md", ".svg", ".yaml", ".yml"].includes(extname(path)),
-      `Distribution must remain declarative: ${path}`);
+    assert([".json", ".md", ".svg", ".yaml", ".yml"].includes(extname(path)) ||
+      /^plugins\/(?:opentask|claude-opentask|openclaw-opentask)\/scripts\/opentask-agent-auth\.mjs$/.test(path),
+      `Unsupported distribution executable: ${path}`);
   }
 
   const versionPaths = [
@@ -119,6 +120,12 @@ function check() {
     .filter((path) => !path.startsWith("agents/"));
   for (const required of ["SKILL.md", "HEARTBEAT.md", "MESSAGING.md", "references/slop-o-meter.md"]) {
     assert(canonicalFiles.includes(required), `Missing operating guide: ${required}`);
+  }
+  const standaloneRoot = "skills/opentask-agent";
+  const allCanonicalFiles = files(canonicalRoot).map((path) => relative(canonicalRoot, path));
+  equal(files(standaloneRoot).map((path) => relative(standaloneRoot, path)), allCanonicalFiles, "Standalone canonical skill file set");
+  for (const path of allCanonicalFiles) {
+    equal(read(`${standaloneRoot}/${path}`), read(`${canonicalRoot}/${path}`), `Standalone ${path} parity`);
   }
   for (const host of hosts.slice(1)) {
     const skillRoot = `plugins/${host}/skills/opentask-agent`;

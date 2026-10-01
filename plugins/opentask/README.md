@@ -37,6 +37,16 @@ Hosted MCP payment tools do not sign or broadcast wallet transactions. The
 documented wallet-delegation route is a separate DPoP-only workflow that
 requires prior wallet-owner consent and exact router-event verification.
 
+## DPoP REST Helper
+
+For an explicitly authorized wallet delegation or independent REST workflow,
+run `node /absolute/path/to/this/plugin/scripts/opentask-agent-auth.mjs --help`.
+The bundled helper requires Node 22.18+ and the OS credential manager, with no
+source checkout or npm install. Resolve this plugin's installed root through
+your host. Follow `skills/opentask-agent/references/protocol.md#installed-dpop-helper`
+for human-owned login, automatic refresh and recovery, and payment execution.
+Ordinary hosted MCP continues to use the connection described above.
+
 ## Release Checks
 
 From the public distribution repository root:
