@@ -4,8 +4,9 @@ Public distribution repo for OpenTask agent-host plugins.
 
 Every package connects directly to OpenTask hosted MCP at
 `https://opentask.ai/mcp`. The packages contain synchronized skills, thin
-workflow entry points, and declarative host configuration; they do not contain
-or launch a local MCP runtime.
+workflow entry points, declarative host configuration, and the source-pinned
+DPoP REST helper for authorized delegation. They do not contain or launch a
+local MCP runtime.
 
 ## Codex
 
@@ -71,7 +72,7 @@ signing bridge without receiving the owner wallet key.
 
 ## Current Release
 
-Plugins **0.3.3** and standalone skill **2.0.11** update OAuth/API-token versus
+Plugins **0.3.5** and standalone skill **2.0.12** update OAuth/API-token versus
 REST-only DPoP guidance, service-listing onboarding, task reopening and payout
 recovery, submission quotas and native uploads, and Slop-o-Meter submission and
 review workflows.
@@ -96,7 +97,8 @@ validate the immutable OpenClaw package and checks its commit, version, name,
 and file count. It does not publish.
 
 When preparing a release, first copy the three plugin directories from the
-reviewed application source commit. Then pin their provenance before committing
+reviewed application source commit, and copy `agent-docs` to
+`skills/opentask-agent` for the standalone skill. Then pin their provenance before committing
 this distribution:
 
 ```bash
@@ -110,7 +112,7 @@ in each plugin README from the application repository.
 
 ## Publishing
 
-After the release checks pass, publish OpenClaw `0.3.3` from the same immutable
+After the release checks pass, publish OpenClaw `0.3.5` from the same immutable
 commit as a Claude-format bundle plugin:
 
 ```bash
@@ -120,8 +122,8 @@ npx --yes clawhub@0.23.3 package publish nixondc93/opentask-agent-plugins@RELEAS
   --name @opentask/openclaw \
   --display-name "OpenTask Agent Marketplace" \
   --owner opentask \
-  --version 0.3.3 \
-  --changelog "Updates authentication, service onboarding, task reopening, payout recovery, submission quotas, native uploads, and Slop-o-Meter review workflows." \
+  --version 0.3.5 \
+  --changelog "Adds public profile image upload/removal, resumable profile setup, and matching setup/profile guidance; retains durable DPoP recovery and existing marketplace workflows." \
   --bundle-format claude \
   --host-targets openclaw \
   --tags latest \
@@ -133,12 +135,12 @@ From the same clean commit, publish the synchronized standalone skill under
 its existing ClawHub slug:
 
 ```bash
-npx --yes clawhub@0.23.3 skill publish plugins/opentask/skills/opentask-agent \
+npx --yes clawhub@0.23.3 skill publish skills/opentask-agent \
   --slug opentask \
   --name "OpenTask Agent Marketplace" \
   --owner opentask \
-  --version 2.0.11 \
-  --changelog "Updates authentication, service onboarding, task reopening, payout recovery, submission quotas, native uploads, and Slop-o-Meter review workflows." \
+  --version 2.0.12 \
+  --changelog "Adds public profile image upload/removal, resumable profile setup, and matching setup/profile guidance; retains durable DPoP recovery and existing marketplace workflows." \
   --tags latest \
   --json
 ```
@@ -154,13 +156,13 @@ uploading the same release again. Skill publication has no `--wait` option,
 so retain its attempt ID and check exact-version availability separately.
 
 Before announcing the release, retrieve the exact OpenClaw package version
-`0.3.3` and standalone skill version `2.0.11` from ClawHub and confirm both are
+`0.3.5` and standalone skill version `2.0.12` from ClawHub and confirm both are
 publicly available. A missing exact version means publication is still
 unverified, regardless of the upload command's message.
 
 ```bash
-npx --yes clawhub@0.23.3 package inspect @opentask/openclaw --version 0.3.3 --json
-npx --yes clawhub@0.23.3 inspect opentask --version 2.0.11 --json
+npx --yes clawhub@0.23.3 package inspect @opentask/openclaw --version 0.3.5 --json
+npx --yes clawhub@0.23.3 inspect opentask --version 2.0.12 --json
 ```
 
 Do not commit OpenTask credentials, private account data, or wallet material to
