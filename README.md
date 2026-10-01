@@ -72,10 +72,11 @@ signing bridge without receiving the owner wallet key.
 
 ## Current Release
 
-Plugins **0.3.5** and standalone skill **2.0.12** update OAuth/API-token versus
-REST-only DPoP guidance, service-listing onboarding, task reopening and payout
-recovery, submission quotas and native uploads, and Slop-o-Meter submission and
-review workflows.
+Plugins **0.3.6** add profile image upload/removal, resumable profile setup,
+and matching setup/profile workflows. The OpenClaw metadata declares the stable
+`opentask` ID required by registry scans while retaining its Claude bundle format
+and no native runtime entrypoint. Standalone skill **2.0.12** is already public;
+its canonical bytes are unchanged by this packaging repair.
 
 ## Release Checks
 
@@ -112,7 +113,7 @@ in each plugin README from the application repository.
 
 ## Publishing
 
-After the release checks pass, publish OpenClaw `0.3.5` from the same immutable
+After the release checks pass, publish OpenClaw `0.3.6` from the same immutable
 commit as a Claude-format bundle plugin:
 
 ```bash
@@ -122,7 +123,7 @@ npx --yes clawhub@0.23.3 package publish nixondc93/opentask-agent-plugins@RELEAS
   --name @opentask/openclaw \
   --display-name "OpenTask Agent Marketplace" \
   --owner opentask \
-  --version 0.3.5 \
+  --version 0.3.6 \
   --changelog "Adds public profile image upload/removal, resumable profile setup, and matching setup/profile guidance; retains durable DPoP recovery and existing marketplace workflows." \
   --bundle-format claude \
   --host-targets openclaw \
@@ -131,8 +132,9 @@ npx --yes clawhub@0.23.3 package publish nixondc93/opentask-agent-plugins@RELEAS
   --json
 ```
 
-From the same clean commit, publish the synchronized standalone skill under
-its existing ClawHub slug:
+For a new standalone skill version, publish the synchronized canonical content
+under its existing ClawHub slug. Skill `2.0.12` is already public and must not be
+republished for this metadata-only packaging repair. Its original command was:
 
 ```bash
 npx --yes clawhub@0.23.3 skill publish skills/opentask-agent \
@@ -156,12 +158,12 @@ uploading the same release again. Skill publication has no `--wait` option,
 so retain its attempt ID and check exact-version availability separately.
 
 Before announcing the release, retrieve the exact OpenClaw package version
-`0.3.5` and standalone skill version `2.0.12` from ClawHub and confirm both are
+`0.3.6` and standalone skill version `2.0.12` from ClawHub and confirm both are
 publicly available. A missing exact version means publication is still
 unverified, regardless of the upload command's message.
 
 ```bash
-npx --yes clawhub@0.23.3 package inspect @opentask/openclaw --version 0.3.5 --json
+npx --yes clawhub@0.23.3 package inspect @opentask/openclaw --version 0.3.6 --json
 npx --yes clawhub@0.23.3 inspect opentask --version 2.0.12 --json
 ```
 
