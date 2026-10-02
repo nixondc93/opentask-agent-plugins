@@ -14,7 +14,12 @@ Use this reference for contract delivery packages, artifact uploads, acceptance-
 
 ## Availability and scopes
 
-Read `opentask://mcp/feature-metadata` before starting and branch on the exact
+Read `opentask://mcp/feature-metadata` using your authenticated connection before
+starting. `globallyEnabled` describes service capability; `eligible` is the
+current profile's rollout eligibility (`null` for anonymous discovery). Effective
+`enabled` requires both. Read `unavailableReason` when unavailable; authentication
+is required to resolve unknown eligibility. REST agents can read the same
+`nativeDeliveryAvailability` facts on contract detail. Branch on the exact
 operation gate:
 
 - `operational.featureAvailability.nativeDeliveries.enabled` must be `true` to
@@ -35,6 +40,14 @@ operation.
 - Save or submit buyer decisions with `deliveries:review`.
 - Native file upload also needs `attachments:write`; native file download also needs `attachments:read`.
 - External HTTPS artifacts do not require the attachment upload feature.
+
+A contract or milestone with a native package stays on the native workflow. Read milestone `currentDelivery`, `acceptedDeliveryPackageId`, `nativeDeliveryAvailability`, and `availableActions` from `opentask_list_contract_milestones`. Ordinary milestone submit and decision tools cannot bypass native review. Its
+`prepare_delivery` or `revise_delivery` action first lists packages: resume an
+existing draft with `opentask_get_delivery` and `opentask_update_delivery_draft`.
+If no draft exists, create one; after requested changes set
+`basedOnDeliveryPackageId` to the current immutable package ID. Page through
+`nextCursor` when locating a draft. Do not create a duplicate draft on resumption.
+An ordinary submission on a native contract returns `native_delivery_required`.
 
 When native delivery reads are unavailable, follow the contract's returned
 `availableActions`. Use an ordinary contract submission only when that response
@@ -87,7 +100,13 @@ For native files:
 3. Read the upload URL and headers only from structured tool output. Do not paste, log, summarize, or persist them.
 4. Upload the binary bytes directly. Never send binary content through MCP or the OpenTask API process.
 5. Call `opentask_complete_delivery_upload` with a new stable idempotency key for that completion request.
-6. Wait until processing reports a clean, bindable file before submission.
+6. Poll only while `pollAfterMs` is non-null. A processing failure stops polling:
+   inspect `failureCode`, `retryEligible`, `retryBlockedReason`, and
+   `processingAttemptsRemaining`. Retry processing only when eligible. If
+   processing is disabled, wait for service recovery; if retries are exhausted,
+   remove the file or seek support instead of repeating the retry. Apply the same
+   rules to message, submission, and entry attachments. Only clean, bindable files
+   may be submitted.
 7. Bind clean files in `nativeArtifacts` when calling `opentask_submit_delivery`.
 
 `opentask_get_artifact_download` returns a short-lived private authorization. Use it directly from structured output and never repeat it in narrative text. Treat scan failures and rejected files as unavailable evidence.
@@ -117,7 +136,7 @@ Draft writes use optimistic concurrency:
 
 On a conflict, stop, re-read, compare the new state, and deliberately rebuild the request. A changed body needs a new idempotency key. Reusing an idempotency key with different input is an error.
 
-When a buyer requests changes, create the next draft from the prior package with `basedOnDeliveryPackageId`. Include a precise `changeSummary`, preserve still-valid evidence, replace stale artifacts, and re-evaluate every criterion. Each submitted revision remains immutable and auditable.
+When a buyer requests changes, list deliveries in that contract and milestone scope. If no draft exists, create the next draft from the latest reviewed package with `basedOnDeliveryPackageId`; omitting or using a stale base is rejected before creating a draft. If a draft already exists (including one prepared before the review), call `opentask_update_delivery_draft` with its current `expectedVersion` and the latest `basedOnDeliveryPackageId`. Updating the base preserves all current artifacts and criterion claims; inspect and deliberately reconcile them with the requested changes. Include a precise `changeSummary`, preserve still-valid evidence, replace stale artifacts, and re-evaluate every criterion. Each submitted revision remains immutable and auditable.
 
 ## Settlement boundary
 
@@ -127,11 +146,16 @@ Delivery approval and payment proof are separate authorities:
 - Router-verified payment proof proves settlement.
 - A status label, transaction hash, upload, message, or review draft proves neither by itself.
 
-Inspect payment options and active payment requests after approval. Do not accept a contract or represent it as paid until the contract response reports the required exact router verification. Milestone delivery and payment remain scoped to that milestone.
+Inspect payment options and active payment requests after approval. Do not accept a contract or represent it as paid until the contract response reports the required exact router verification. Milestone delivery and payment remain scoped to that milestone. For contract-level delivery, approval leaves the package `approved_pending_settlement`. Re-read contract context after verified payment; when `availableActions` returns `accept_submission`, use its `opentask_decide_submission` input to finalize acceptance. Follow that returned action even while native delivery is enabled.
 
 ## Recovery
 
-- `feature_disabled`: re-read feature metadata and the contract's `availableActions`; do not loop.
+- `native_delivery_not_eligible`: the profile is outside rollout; retrying or refreshing credentials does not grant access. Follow contract `availableActions`. An existing native workflow remains blocked until access is restored; do not bypass it with an ordinary submission.
+- `native_deliveries_disabled`: service is temporarily disabled; re-read authenticated feature metadata and contract actions after recovery. Respect `Retry-After` and do not loop.
+- `native_delivery_auth_required`: authenticate, then re-read feature metadata to resolve eligibility.
+- `native_delivery_required`: resume or revise the native package; ordinary contract or milestone submissions and milestone decisions cannot replace it.
+- `delivery_revision_base_invalid`: list deliveries for the same contract and milestone, read the latest revision and any existing draft, then set `basedOnDeliveryPackageId` using a version-protected draft update. Do not try to create a second draft.
+- `delivery_change_summary_required`: update the draft with a substantive `changeSummary` describing the requested corrections.
 - seller writes disabled: remain read-only; do not substitute an ordinary
   submission while native delivery remains enabled.
 - buyer review disabled: inspect and report the package without saving or

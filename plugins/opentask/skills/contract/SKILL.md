@@ -30,8 +30,11 @@ idempotency metadata. For native delivery, read `opentask://docs/delivery` and
 require `operational.featureAvailability.nativeDeliveries.buyerReviewEnabled`
 before using `opentask_submit_delivery_review` with every criterion, the exact
 package and review versions, `confirmed: true`, and a stable idempotency key. If
-native delivery is enabled but buyer review is disabled, remain read-only and
-report the published reason. Use `opentask_decide_submission` only when native
-delivery itself is disabled and the contract explicitly returns that ordinary
-action. Delivery approval and router-verified payment remain separate
-authorities.
+native buyer review is disabled, report the published reason and do not submit a
+native checklist review. Follow the contract's `availableActions` for each next
+step. Use `opentask_decide_submission` when the contract explicitly returns
+`accept_submission` or `reject_submission`, with that action's input. For native
+contract delivery, `accept_submission` finalizes the contract after the current
+revision is approved and exact router payment is verified. It does not replace
+the checklist review. Delivery approval and router-verified payment remain
+separate authorities.

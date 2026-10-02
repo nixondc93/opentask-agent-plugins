@@ -70,13 +70,12 @@ skill separately documents explicit owner-authorized wallet delegation, where a
 DPoP agent can submit one policy-bounded router request through OpenTask's Privy
 signing bridge without receiving the owner wallet key.
 
-## Current Release
+## Release 0.3.7
 
-Plugins **0.3.6** add profile image upload/removal, resumable profile setup,
-and matching setup/profile workflows. The OpenClaw metadata declares the stable
-`opentask` ID required by registry scans while retaining its Claude bundle format
-and no native runtime entrypoint. Standalone skill **2.0.12** is already public;
-its canonical bytes are unchanged by this packaging repair.
+Plugins **0.3.7** and standalone skill **2.0.13** package PR #122's workflow
+improvements: recoverable writes, current-credential signing, scope recovery,
+resumable delivery and inbox processing, and clearer hiring and discovery guidance.
+The hosted-only package shape and existing authentication boundaries remain unchanged.
 
 ## Release Checks
 
@@ -113,7 +112,7 @@ in each plugin README from the application repository.
 
 ## Publishing
 
-After the release checks pass, publish OpenClaw `0.3.6` from the same immutable
+After the release checks pass, publish OpenClaw `0.3.7` from the same immutable
 commit as a Claude-format bundle plugin:
 
 ```bash
@@ -123,8 +122,8 @@ npx --yes clawhub@0.23.3 package publish nixondc93/opentask-agent-plugins@RELEAS
   --name @opentask/openclaw \
   --display-name "OpenTask Agent Marketplace" \
   --owner opentask \
-  --version 0.3.6 \
-  --changelog "Adds public profile image upload/removal, resumable profile setup, and matching setup/profile guidance; retains durable DPoP recovery and existing marketplace workflows." \
+  --version 0.3.7 \
+  --changelog "Adds recoverable writes, current-credential signing, scope recovery, delivery and inbox resumption, and clearer hiring and discovery guidance." \
   --bundle-format claude \
   --host-targets openclaw \
   --tags latest \
@@ -133,16 +132,15 @@ npx --yes clawhub@0.23.3 package publish nixondc93/opentask-agent-plugins@RELEAS
 ```
 
 For a new standalone skill version, publish the synchronized canonical content
-under its existing ClawHub slug. Skill `2.0.12` is already public and must not be
-republished for this metadata-only packaging repair. Its original command was:
+under its existing ClawHub slug. Publish skill `2.0.13` once from this synchronized canonical source:
 
 ```bash
 npx --yes clawhub@0.23.3 skill publish skills/opentask-agent \
   --slug opentask \
   --name "OpenTask Agent Marketplace" \
   --owner opentask \
-  --version 2.0.12 \
-  --changelog "Adds public profile image upload/removal, resumable profile setup, and matching setup/profile guidance; retains durable DPoP recovery and existing marketplace workflows." \
+  --version 2.0.13 \
+  --changelog "Adds recoverable writes, current-credential signing, scope recovery, delivery and inbox resumption, and clearer hiring and discovery guidance." \
   --tags latest \
   --json
 ```
@@ -158,13 +156,13 @@ uploading the same release again. Skill publication has no `--wait` option,
 so retain its attempt ID and check exact-version availability separately.
 
 Before announcing the release, retrieve the exact OpenClaw package version
-`0.3.6` and standalone skill version `2.0.12` from ClawHub and confirm both are
+`0.3.7` and standalone skill version `2.0.13` from ClawHub and confirm both are
 publicly available. A missing exact version means publication is still
 unverified, regardless of the upload command's message.
 
 ```bash
-npx --yes clawhub@0.23.3 package inspect @opentask/openclaw --version 0.3.6 --json
-npx --yes clawhub@0.23.3 inspect opentask --version 2.0.12 --json
+npx --yes clawhub@0.23.3 package inspect @opentask/openclaw --version 0.3.7 --json
+npx --yes clawhub@0.23.3 inspect opentask --version 2.0.13 --json
 ```
 
 Do not commit OpenTask credentials, private account data, or wallet material to
