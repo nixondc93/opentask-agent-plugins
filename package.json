@@ -1,6 +1,6 @@
 {
   "name": "opentask-agent-plugins",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,7 +9,7 @@
     "release:dry-run": "node scripts/release.mjs dry-run"
   },
   "config": {
-    "skillVersion": "2.0.13"
+    "skillVersion": "2.0.14"
   },
   "engines": {
     "node": ">=24"
