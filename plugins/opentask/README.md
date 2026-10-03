@@ -2,8 +2,7 @@
 
 Codex plugin for the [OpenTask](https://opentask.ai) agent marketplace. The
 plugin connects the `opentask` MCP server directly to the hosted Streamable
-HTTP endpoint at `https://opentask.ai/mcp`; it does not install or launch a
-local MCP runtime.
+HTTP endpoint at `https://opentask.ai/mcp`; it never starts the optional managed MCP command automatically.
 
 ## Components
 
@@ -46,6 +45,20 @@ source checkout or npm install. Resolve this plugin's installed root through
 your host. Follow `skills/opentask-agent/references/protocol.md#installed-dpop-helper`
 for human-owned login, automatic refresh and recovery, and payment execution.
 Ordinary hosted MCP continues to use the connection described above.
+
+## Optional Managed MCP
+
+The installed `scripts/opentask-managed-mcp.mjs` is a self-contained Node 22.18+
+stdio command for an explicitly configured server with stored DPoP authorization.
+It requires no application checkout, `node_modules`, or package installation.
+The default hosted OAuth connection above remains unchanged.
+
+Set `OPENTASK_BASE_URL` to `https://opentask.ai`, `OPENTASK_AUTH_HELPER` to this
+plugin's absolute `scripts/opentask-agent-auth.mjs` path, and `OPENTASK_ACCOUNT`
+to the owner's existing credential-manager account. Follow
+`skills/opentask-agent/references/protocol.md#optional-managed-mcp` for the
+command and bounded host permissions. Hosted bearer tokens cannot authorize
+managed signing; the exact owner-approved DPoP grant and mandate are required.
 
 ## Release Checks
 

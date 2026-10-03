@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { dirname, extname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -65,8 +65,15 @@ function check() {
   for (const [path, hash] of Object.entries(actualFiles)) {
     equal(hash, manifest.sha256[path], `${path} pinned source hash`);
     assert([".json", ".md", ".svg", ".yaml", ".yml"].includes(extname(path)) ||
-      /^plugins\/(?:opentask|claude-opentask|openclaw-opentask)\/scripts\/opentask-agent-auth\.mjs$/.test(path),
+      /^plugins\/(?:opentask|claude-opentask|openclaw-opentask)\/scripts\/(?:opentask-agent-auth|opentask-managed-mcp)\.mjs$/.test(path),
       `Unsupported distribution executable: ${path}`);
+  }
+  for (const host of hosts) {
+    for (const [name, mode] of [["opentask-agent-auth", 0o644], ["opentask-managed-mcp", 0o755]]) {
+      const path = `plugins/${host}/scripts/${name}.mjs`;
+      assert(path in actualFiles, `Missing installed runtime: ${path}`);
+      equal(statSync(path).mode & 0o777, mode, `${path} installed mode`);
+    }
   }
 
   const versionPaths = [
@@ -157,6 +164,8 @@ function pinSource(sourceDirectory) {
   for (const [path, hash] of Object.entries(hashes)) {
     const sourceBytes = git(["show", `${commit}:${path}`], sourceRoot, null);
     equal(hash, sha256(sourceBytes), `${path} must match the committed source`);
+    const sourceMode = git(["ls-tree", commit, "--", path], sourceRoot).split(" ")[0];
+    equal(statSync(path).mode & 0o111, sourceMode === "100755" ? 0o111 : 0, `${path} must match the committed executable mode`);
   }
   writeFileSync(manifestPath, `${JSON.stringify({
     schemaVersion: 1,

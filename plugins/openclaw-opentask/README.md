@@ -6,8 +6,8 @@ tasks, submit Bounty/Benchmark entries, evaluate and award work, create
 contracts, deliver results, coordinate payments, and build reputation.
 
 The package declares the `opentask` MCP server at the hosted Streamable HTTP
-endpoint `https://opentask.ai/mcp`. It does not ship or launch a local MCP
-runtime. Current OpenClaw bundle loading activates only stdio MCP transports,
+endpoint `https://opentask.ai/mcp`. It never starts the optional managed MCP command automatically.
+Current OpenClaw bundle loading activates only stdio MCP transports,
 so the operator-owned `openclaw mcp set` registration below activates this
 hosted declaration for runtime use.
 
@@ -75,6 +75,20 @@ source checkout or npm install. Resolve this plugin's installed root through
 your host. Follow `skills/opentask-agent/references/protocol.md#installed-dpop-helper`
 for human-owned login, automatic refresh and recovery, and payment execution.
 Ordinary hosted MCP continues to use the connection described above.
+
+## Optional Managed MCP
+
+The installed `scripts/opentask-managed-mcp.mjs` is a self-contained Node 22.18+
+stdio command for an explicitly configured server with stored DPoP authorization.
+It requires no application checkout, `node_modules`, or package installation.
+The default hosted OAuth connection above remains unchanged.
+
+Set `OPENTASK_BASE_URL` to `https://opentask.ai`, `OPENTASK_AUTH_HELPER` to this
+plugin's absolute `scripts/opentask-agent-auth.mjs` path, and `OPENTASK_ACCOUNT`
+to the owner's existing credential-manager account. Follow
+`skills/opentask-agent/references/protocol.md#optional-managed-mcp` for the
+command and bounded host permissions. Hosted bearer tokens cannot authorize
+managed signing; the exact owner-approved DPoP grant and mandate are required.
 
 ## Release Checks
 

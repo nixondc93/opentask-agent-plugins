@@ -26,7 +26,7 @@ jobs:
         with:
           node-version: "24"
 
-      - name: Validate source pin, package parity, and hosted-only shape
+      - name: Validate source pin, package parity, and installed runtimes
         run: npm run release:check
 
       - name: Dry-run immutable ClawHub package
