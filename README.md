@@ -4,9 +4,11 @@ Public distribution repo for OpenTask agent-host plugins.
 
 Every package connects directly to OpenTask hosted MCP at
 `https://opentask.ai/mcp`. The packages contain synchronized skills, thin
-workflow entry points, declarative host configuration, and the source-pinned
-DPoP REST helper for authorized delegation. They do not contain or launch a
-local MCP runtime.
+workflow entry points, declarative host configuration, the source-pinned
+DPoP REST helper and an optional self-contained managed MCP runtime for
+authorized delegation. Managed setup explicitly selects the installed stdio
+runtime and its OS credential-manager account; the default hosted MCP
+configuration continues to use OAuth.
 
 ## Codex
 
@@ -28,7 +30,7 @@ Start a new Claude Code session after installation.
 
 ## OpenClaw
 
-Install the hosted-only bundle from ClawHub:
+Install the bundle from ClawHub:
 
 ```bash
 openclaw plugins install clawhub:@opentask/openclaw
@@ -70,13 +72,16 @@ skill separately documents explicit owner-authorized wallet delegation, where a
 DPoP agent can submit one policy-bounded router request through OpenTask's Privy
 signing bridge without receiving the owner wallet key.
 
-## Release 0.3.9
+## Release 0.4.0
 
-Plugins **0.3.9** and standalone skill **2.0.15** explain public task
-moderation: publish actionable buyer work, inspect pending or rejected reasons,
-correct the brief and read back the current decision. Service advertisements
-belong in the Agent Directory. The hosted-only package shape and existing
-authentication boundaries remain unchanged.
+Plugins **0.4.0** and standalone skill **2.1.0** provide reusable owner-approved
+managed spending, finite funding readiness and durable payment recovery. The
+three host packages include `scripts/opentask-managed-mcp.mjs`; no private
+application checkout or dependency installation is needed. Follow the bundled
+operating skill's managed setup to select a human-owned DPoP grant and approve
+only the required host tools. Hosted OAuth and managed spending retain their
+separate authorization boundaries. Live payment availability depends on the
+configured rail, prior owner consent and wallet funding.
 
 ## Release Checks
 
@@ -88,7 +93,7 @@ npm run release:dry-run
 ```
 
 `release:check` verifies all plugin files against `release-source.json`, host
-manifests, hosted-only MCP declarations, workflow entry points, and every
+manifests, default hosted MCP declarations and exact installed runtime files, workflow entry points, and every
 operating-skill reference across hosts. The source manifest records the exact
 application source commit and SHA-256 hashes for the public plugin payloads.
 
@@ -113,7 +118,7 @@ in each plugin README from the application repository.
 
 ## Publishing
 
-After the release checks pass, publish OpenClaw `0.3.9` from the same immutable
+After the release checks pass, publish OpenClaw `0.4.0` from the same immutable
 commit as a Claude-format bundle plugin:
 
 ```bash
@@ -123,8 +128,8 @@ npx --yes clawhub@0.23.3 package publish nixondc93/opentask-agent-plugins@RELEAS
   --name @opentask/openclaw \
   --display-name "OpenTask Agent Marketplace" \
   --owner opentask \
-  --version 0.3.9 \
-  --changelog "Explains public task moderation, owner decision readback and correction, and routes seller advertisements to service listings." \
+  --version 0.4.0 \
+  --changelog "Adds self-contained managed MCP runtimes, reusable owner-approved spending, finite readiness and durable payment recovery." \
   --bundle-format claude \
   --host-targets openclaw \
   --tags latest \
@@ -133,15 +138,15 @@ npx --yes clawhub@0.23.3 package publish nixondc93/opentask-agent-plugins@RELEAS
 ```
 
 For a new standalone skill version, publish the synchronized canonical content
-under its existing ClawHub slug. Publish skill `2.0.15` once from this synchronized canonical source:
+under its existing ClawHub slug. Publish skill `2.1.0` once from this synchronized canonical source:
 
 ```bash
 npx --yes clawhub@0.23.3 skill publish skills/opentask-agent \
   --slug opentask \
   --name "OpenTask Agent Marketplace" \
   --owner opentask \
-  --version 2.0.15 \
-  --changelog "Explains public task moderation, owner decision readback and correction, and routes seller advertisements to service listings." \
+  --version 2.1.0 \
+  --changelog "Adds self-contained managed MCP runtimes, reusable owner-approved spending, finite readiness and durable payment recovery." \
   --tags latest \
   --json
 ```
@@ -157,13 +162,13 @@ uploading the same release again. Skill publication has no `--wait` option,
 so retain its attempt ID and check exact-version availability separately.
 
 Before announcing the release, retrieve the exact OpenClaw package version
-`0.3.9` and standalone skill version `2.0.15` from ClawHub and confirm both are
+`0.4.0` and standalone skill version `2.1.0` from ClawHub and confirm both are
 publicly available. A missing exact version means publication is still
 unverified, regardless of the upload command's message.
 
 ```bash
-npx --yes clawhub@0.23.3 package inspect @opentask/openclaw --version 0.3.9 --json
-npx --yes clawhub@0.23.3 inspect opentask --version 2.0.15 --json
+npx --yes clawhub@0.23.3 package inspect @opentask/openclaw --version 0.4.0 --json
+npx --yes clawhub@0.23.3 inspect opentask --version 2.1.0 --json
 ```
 
 Do not commit OpenTask credentials, private account data, or wallet material to
