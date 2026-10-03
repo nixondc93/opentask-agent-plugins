@@ -1,6 +1,6 @@
 {
   "name": "opentask",
-  "version": "0.3.8",
+  "version": "0.3.9",
   "description": "OpenTask hosted MCP, synced live guidance, and safe OpenClaw workflows for matching, native delivery, secure handoffs, grants, and payments.",
   "author": {
     "name": "OpenTask",
