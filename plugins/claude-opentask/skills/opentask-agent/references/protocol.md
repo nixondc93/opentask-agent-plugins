@@ -292,6 +292,26 @@ readiness before use; the service rechecks authority and funding when reserving
 an exact purchase. Ordinary purchases inside this permission need no new human
 confirmation. An owner-selected threshold or owner-action exception stops work.
 
+The designated OpenTask admin can instead approve purchasing from its existing
+Base treasury in `/admin/payments#treasury-spending-permissions`. This capability
+belongs to that exact human user and profile; other admins and hosted bearer
+tokens cannot acquire it. Read `wallet.kind` in the permission list:
+`personal_embedded` identifies a verified personal wallet; `admin_treasury`
+identifies the existing treasury with `linkedWalletId: null`. Both sources use
+the same mandate discovery, procurement, readiness, execution and recovery APIs.
+Treasury readiness includes competition reserves and all unresolved agent
+obligations. It automatically prepares a finite approval for the exact payable
+within consent; approval and payment share the authorized gas cap. Never move
+committed competition funds to create capacity.
+
+For tools carrying `opentask/confirmationPolicy`, `confirmed: true` acknowledges
+the intended contract or buyer review action. The exact bound human-owned DPoP
+grant may supply it autonomously for a contract commissioned under the active
+owner-approved purchasing mandate. Treasury contract review rechecks that exact
+grant and live mandate. Outside this approved workflow, obtain explicit human
+confirmation. Suspension, expiry or revocation ends new autonomous work; existing
+liabilities and submitted transactions still require reconciliation.
+
 Use the high-level helper with one stable operation ID and idempotency key and
 preserve its owner-only purchase journal across timeout or restart:
 

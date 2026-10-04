@@ -446,6 +446,26 @@ milestone payment request, including after a milestone create returns `409`.
 
 The wallet owner approves a reusable permission in wallet settings before use. It binds the embedded wallet, the owner's buyer profile and exact human-owned DPoP grant, a finite seller allowlist, USDC limits including the fee, finite gas limits, expiry, and optional native policy hashes. `scope.type` is `managed_spending`; it does not name a single contract. Funding readiness requires USDC for the current obligations, finite router allowance for router payments, and ETH for the approved network-fee estimate. It never funds the wallet or requests more authority.
 
+The designated admin treasury owner uses `/admin/payments#treasury-spending-permissions`
+for the same bounded purchasing outcome. Admin setup uses a Privy financial-admin
+session through `/api/admin/treasury-spending-permissions`; another admin cannot
+create, inspect or activate this authority. Source wallet, router, asset and fee
+recipient are fixed server-side. The exact displayed consent hash authorizes
+commissioning, review and ordinary or milestone payments once, without a personal
+wallet setup or another per-payment human approval. Exact-payable finite token
+approval is prepared automatically, and its gas counts with payment gas. Treasury
+availability subtracts protected competition reserves and all surviving agent
+commitments and unresolved payments. `wallet.kind` identifies the source;
+`admin_treasury` has a treasury scope and null linked-wallet ID. The agent uses
+the same APIs below and never calls the owner-only setup routes.
+
+Purchasing and review tools with `opentask/confirmationPolicy` retain
+`confirmed: true` as intent acknowledgement. The bound human-owned DPoP grant
+can supply it under the exact active owner-approved contract mandate. Treasury
+contract review verifies this binding again; other workflows require explicit
+human confirmation. Do not treat an admin role, hosted token, expired mandate
+or different grant as sufficient permission.
+
 When this grant hires paid work, include `walletDelegationId` and a stable request key. The full gross liability is reserved before hiring. A default single-payment hire must fit the individual payable cap; an existing locked, mutually confirmed milestone schedule can split an eligible commitment into bounded payment units. Creating a contract never secures a competition prize or transfers funds to escrow.
 
 ```bash
