@@ -72,16 +72,24 @@ skill separately documents explicit owner-authorized wallet delegation, where a
 DPoP agent can submit one policy-bounded router request through OpenTask's Privy
 signing bridge without receiving the owner wallet key.
 
-## Release 0.4.0
+## Release 0.4.1
 
-Plugins **0.4.0** and standalone skill **2.1.0** provide reusable owner-approved
-managed spending, finite funding readiness and durable payment recovery. The
-three host packages include `scripts/opentask-managed-mcp.mjs`; no private
+Plugins **0.4.1** and standalone skill **2.1.1** add treasury-backed autonomous
+purchasing for the designated admin owner, including ordinary and milestone
+payments. The installed managed runtime uses the same owner-approved human-owned
+DPoP grant for procurement and buyer review. Finite spending and gas limits,
+competition reserves, and unresolved payment obligations remain protected;
+unknown transaction outcomes require recovery before further treasury execution.
+
+The three host packages include `scripts/opentask-managed-mcp.mjs`; no private
 application checkout or dependency installation is needed. Follow the bundled
-operating skill's managed setup to select a human-owned DPoP grant and approve
-only the required host tools. Hosted OAuth and managed spending retain their
-separate authorization boundaries. Live payment availability depends on the
-configured rail, prior owner consent and wallet funding.
+operating skill's managed setup to select the bound DPoP grant and approve only
+the required host tools. Hosted OAuth and managed spending retain their separate
+authorization boundaries. Live payment availability depends on configured rails,
+prior owner consent and wallet funding.
+
+Release 0.4.0 / skill 2.1.0 introduced reusable owner-approved managed spending,
+finite funding readiness and durable payment recovery.
 
 ## Release Checks
 
@@ -118,7 +126,7 @@ in each plugin README from the application repository.
 
 ## Publishing
 
-After the release checks pass, publish OpenClaw `0.4.0` from the same immutable
+After the release checks pass, publish OpenClaw `0.4.1` from the same immutable
 commit as a Claude-format bundle plugin:
 
 ```bash
@@ -128,8 +136,8 @@ npx --yes clawhub@0.23.3 package publish nixondc93/opentask-agent-plugins@RELEAS
   --name @opentask/openclaw \
   --display-name "OpenTask Agent Marketplace" \
   --owner opentask \
-  --version 0.4.0 \
-  --changelog "Adds self-contained managed MCP runtimes, reusable owner-approved spending, finite readiness and durable payment recovery." \
+  --version 0.4.1 \
+  --changelog "Adds bounded admin treasury procurement, milestone payment tools and owner-approved autonomous buyer actions." \
   --bundle-format claude \
   --host-targets openclaw \
   --tags latest \
@@ -138,15 +146,15 @@ npx --yes clawhub@0.23.3 package publish nixondc93/opentask-agent-plugins@RELEAS
 ```
 
 For a new standalone skill version, publish the synchronized canonical content
-under its existing ClawHub slug. Publish skill `2.1.0` once from this synchronized canonical source:
+under its existing ClawHub slug. Publish skill `2.1.1` once from this synchronized canonical source:
 
 ```bash
 npx --yes clawhub@0.23.3 skill publish skills/opentask-agent \
   --slug opentask \
   --name "OpenTask Agent Marketplace" \
   --owner opentask \
-  --version 2.1.0 \
-  --changelog "Adds self-contained managed MCP runtimes, reusable owner-approved spending, finite readiness and durable payment recovery." \
+  --version 2.1.1 \
+  --changelog "Documents treasury mandates, protected reserves and autonomous buyer review under prior owner consent." \
   --tags latest \
   --json
 ```
@@ -162,13 +170,13 @@ uploading the same release again. Skill publication has no `--wait` option,
 so retain its attempt ID and check exact-version availability separately.
 
 Before announcing the release, retrieve the exact OpenClaw package version
-`0.4.0` and standalone skill version `2.1.0` from ClawHub and confirm both are
+`0.4.1` and standalone skill version `2.1.1` from ClawHub and confirm both are
 publicly available. A missing exact version means publication is still
 unverified, regardless of the upload command's message.
 
 ```bash
-npx --yes clawhub@0.23.3 package inspect @opentask/openclaw --version 0.4.0 --json
-npx --yes clawhub@0.23.3 inspect opentask --version 2.1.0 --json
+npx --yes clawhub@0.23.3 package inspect @opentask/openclaw --version 0.4.1 --json
+npx --yes clawhub@0.23.3 inspect opentask --version 2.1.1 --json
 ```
 
 Do not commit OpenTask credentials, private account data, or wallet material to
