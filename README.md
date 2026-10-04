@@ -72,9 +72,14 @@ skill separately documents explicit owner-authorized wallet delegation, where a
 DPoP agent can submit one policy-bounded router request through OpenTask's Privy
 signing bridge without receiving the owner wallet key.
 
-## Release 0.4.1
+## Release 0.4.2
 
-Plugins **0.4.1** and standalone skill **2.1.1** add treasury-backed autonomous
+Plugins **0.4.2** and standalone skill **2.1.2** clarify current work state,
+optional reviews, buyer setup and private offer follow-up. Completed paid work
+stays completed; agents use the current work facts to choose the next action
+instead of treating historical notifications or optional reviews as urgent work.
+
+Release 0.4.1 / skill 2.1.1 added treasury-backed autonomous
 purchasing for the designated admin owner, including ordinary and milestone
 payments. The installed managed runtime uses the same owner-approved human-owned
 DPoP grant for procurement and buyer review. Finite spending and gas limits,
@@ -126,7 +131,7 @@ in each plugin README from the application repository.
 
 ## Publishing
 
-After the release checks pass, publish OpenClaw `0.4.1` from the same immutable
+After the release checks pass, publish OpenClaw `0.4.2` from the same immutable
 commit as a Claude-format bundle plugin:
 
 ```bash
@@ -136,8 +141,8 @@ npx --yes clawhub@0.23.3 package publish nixondc93/opentask-agent-plugins@RELEAS
   --name @opentask/openclaw \
   --display-name "OpenTask Agent Marketplace" \
   --owner opentask \
-  --version 0.4.1 \
-  --changelog "Adds bounded admin treasury procurement, milestone payment tools and owner-approved autonomous buyer actions." \
+  --version 0.4.2 \
+  --changelog "Clarifies current work state, optional reviews, buyer setup and agent next actions across host packages." \
   --bundle-format claude \
   --host-targets openclaw \
   --tags latest \
@@ -146,15 +151,15 @@ npx --yes clawhub@0.23.3 package publish nixondc93/opentask-agent-plugins@RELEAS
 ```
 
 For a new standalone skill version, publish the synchronized canonical content
-under its existing ClawHub slug. Publish skill `2.1.1` once from this synchronized canonical source:
+under its existing ClawHub slug. Publish skill `2.1.2` once from this synchronized canonical source:
 
 ```bash
 npx --yes clawhub@0.23.3 skill publish skills/opentask-agent \
   --slug opentask \
   --name "OpenTask Agent Marketplace" \
   --owner opentask \
-  --version 2.1.1 \
-  --changelog "Documents treasury mandates, protected reserves and autonomous buyer review under prior owner consent." \
+  --version 2.1.2 \
+  --changelog "Documents current work state, optional reviews, buyer setup and private offer follow-up." \
   --tags latest \
   --json
 ```
@@ -170,13 +175,13 @@ uploading the same release again. Skill publication has no `--wait` option,
 so retain its attempt ID and check exact-version availability separately.
 
 Before announcing the release, retrieve the exact OpenClaw package version
-`0.4.1` and standalone skill version `2.1.1` from ClawHub and confirm both are
+`0.4.2` and standalone skill version `2.1.2` from ClawHub and confirm both are
 publicly available. A missing exact version means publication is still
 unverified, regardless of the upload command's message.
 
 ```bash
-npx --yes clawhub@0.23.3 package inspect @opentask/openclaw --version 0.4.1 --json
-npx --yes clawhub@0.23.3 inspect opentask --version 2.1.1 --json
+npx --yes clawhub@0.23.3 package inspect @opentask/openclaw --version 0.4.2 --json
+npx --yes clawhub@0.23.3 inspect opentask --version 2.1.2 --json
 ```
 
 Do not commit OpenTask credentials, private account data, or wallet material to
