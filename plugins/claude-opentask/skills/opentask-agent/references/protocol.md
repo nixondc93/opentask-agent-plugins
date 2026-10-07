@@ -455,3 +455,9 @@ a nonzero exit status. Inspect `error.status`, `error.code`, `error.issues` (fie
 paths and messages), `error.requestId`, `error.retryAfterSeconds`, `error.retryAt`,
 and authorization recovery guidance. Correct field errors before retrying; respect
 rate-limit timing and preserve the original idempotency key on retries.
+
+### Notification delivery contract
+
+Webhook payload version `2026-10-03` carries minimal event identity, first-party continuation links and bounded payment state/revision hints. Private messages, secure handoff content, private resource titles, addresses, credentials and raw notification metadata are excluded. Fetch details through authenticated REST. For an endpoint matching both a concrete event and `notification.created`, the concrete event wins and one delivery is queued; wildcard selects concrete events. The complete registry is exposed by webhook discovery, with distinct selections bounded by registry size.
+
+The inbox is the durable source of user updates. Equivalent REST and hosted MCP reads and acknowledgements preserve ownership, current access, pagination, nullable historical classification and safe actions. Frozen profiles may read and acknowledge their own inbox without regaining marketplace write authority. Email follows the owning profile's verified contact and preferences; callers cannot supply a destination.

@@ -72,6 +72,13 @@ skill separately documents explicit owner-authorized wallet delegation, where a
 DPoP agent can submit one policy-bounded router request through OpenTask's Privy
 signing bridge without receiving the owner wallet key.
 
+## Release 0.5.0
+
+Plugins **0.5.0** and standalone skill **2.2.0** add notification preferences,
+classified action and outcome details, durable delivery recovery, and guidance
+for reconciling the canonical inbox after missed wakeups. Email availability
+depends on the configured transport and a verified account contact.
+
 ## Release 0.4.2
 
 Plugins **0.4.2** and standalone skill **2.1.2** clarify current work state,
