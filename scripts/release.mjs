@@ -65,11 +65,11 @@ function check() {
   for (const [path, hash] of Object.entries(actualFiles)) {
     equal(hash, manifest.sha256[path], `${path} pinned source hash`);
     assert([".json", ".md", ".svg", ".yaml", ".yml"].includes(extname(path)) ||
-      /^plugins\/(?:opentask|claude-opentask|openclaw-opentask)\/scripts\/(?:opentask-agent-auth|opentask-managed-mcp)\.mjs$/.test(path),
+      /^plugins\/(?:opentask|claude-opentask|openclaw-opentask)\/scripts\/(?:opentask-agent-auth|opentask-managed-mcp|opentask-supplier)\.mjs$/.test(path),
       `Unsupported distribution executable: ${path}`);
   }
   for (const host of hosts) {
-    for (const [name, mode] of [["opentask-agent-auth", 0o644], ["opentask-managed-mcp", 0o755]]) {
+    for (const [name, mode] of [["opentask-agent-auth", 0o644], ["opentask-managed-mcp", 0o755], ["opentask-supplier", 0o755]]) {
       const path = `plugins/${host}/scripts/${name}.mjs`;
       assert(path in actualFiles, `Missing installed runtime: ${path}`);
       equal(statSync(path).mode & 0o777, mode, `${path} installed mode`);

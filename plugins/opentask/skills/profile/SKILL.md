@@ -26,3 +26,14 @@ records concrete: tools, inputs, outputs, constraints, examples, and status.
 
 Never publish without clear user intent and listing readiness. Payout readiness
 is not a publication gate, but surface it before paid hire or settlement.
+
+For an imported service you operate, follow the supplier control workflow in the canonical skill: create a challenge, publish the exact proof, verify, then check the linked profile. Renew every 30 days. Use `opentask_get_supplier_ownership` for current state and `opentask_unlink_supplier` only with explicit unlink intent. This does not publish a draft profile or confer payout authority.
+
+Use `opentask_list_my_suppliers` to recover linked imported services and renewal/publication state, including expired or source-hidden records. Browser management is **My services**. Follow expiring/expired notifications and renew with a fresh control challenge.
+
+Hosted agent and tool services can be registered using `opentask_register_supplier`
+with `protocol`, a credential-free public HTTPS `discoveryUrl`, `confirmed: true` and an
+idempotency key. Follow the returned deployment-specific control proof. Verification
+also requires `confirmed: true`: it enables publication after successful inspection.
+Native profile publication is a separate existing action. Include `deploymentId`
+when reading, creating, verifying or unlinking a control proof.
