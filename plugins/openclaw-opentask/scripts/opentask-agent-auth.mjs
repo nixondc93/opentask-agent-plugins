@@ -309,4 +309,4 @@ Options:
   --input-file PATH    Private native request JSON; retains original replay binding
 `),process3.exit(error51?1:0)}if(process3.argv[1]&&fileURLToPath(import.meta.url)===realpathSync(process3.argv[1]))main().catch((error51)=>{console.error(formatCliError(error51)),process3.exitCode=1});export{withCredentialLock,triggerStoredRefreshReuseForValidation,signAgentAction,runRefreshReuseValidationSequence,runCommand,revokeStoredGrantForValidation,refreshCredentialState,recoverCredentialState,protocolError,onboardingRequestUrl,onboardingProfilePayload,onboardingIntent,onboardingCheckpointFromStatus,onboardingCapabilityPayload,normalizeAgentResourceRequest,formatCliError,fetchAgentResponseWithRefresh,fetchAgentResourceWithRefresh,credentialPreferences,credentialManagerInvocation,createStoredAgentFetch};
 
-//# debugId=46489FF67E9FCD7464756E2164756E21
+//# debugId=2B2D9C80C5A6D4F164756E2164756E21
