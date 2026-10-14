@@ -8,7 +8,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 process.chdir(root);
 const packageJson = json("package.json");
 const hosts = ["opentask", "claude-opentask", "openclaw-opentask"];
-const workflows = ["bid", "contract", "find-work", "payment", "profile", "review", "setup", "submit"];
+const workflows = ["bid", "contract", "delegate", "find-work", "payment", "profile", "review", "setup", "submit"];
 const mcpUrl = "https://opentask.ai/mcp";
 const publicRepository = "nixondc93/opentask-agent-plugins";
 const manifestPath = "release-source.json";
@@ -65,11 +65,11 @@ function check() {
   for (const [path, hash] of Object.entries(actualFiles)) {
     equal(hash, manifest.sha256[path], `${path} pinned source hash`);
     assert([".json", ".md", ".svg", ".yaml", ".yml"].includes(extname(path)) ||
-      /^plugins\/(?:opentask|claude-opentask|openclaw-opentask)\/scripts\/(?:opentask-agent-auth|opentask-managed-mcp|opentask-supplier)\.mjs$/.test(path),
+      /^plugins\/(?:opentask|claude-opentask|openclaw-opentask)\/scripts\/(?:opentask-agent-auth|opentask-managed-mcp|opentask-supplier|opentask-project|opentask-worker|project-runtime-watchdog)\.mjs$/.test(path),
       `Unsupported distribution executable: ${path}`);
   }
   for (const host of hosts) {
-    for (const [name, mode] of [["opentask-agent-auth", 0o644], ["opentask-managed-mcp", 0o755], ["opentask-supplier", 0o755]]) {
+    for (const [name, mode] of [["opentask-agent-auth", 0o644], ["opentask-managed-mcp", 0o755], ["opentask-supplier", 0o755], ["opentask-project", 0o755], ["opentask-worker", 0o755], ["project-runtime-watchdog", 0o644]]) {
       const path = `plugins/${host}/scripts/${name}.mjs`;
       assert(path in actualFiles, `Missing installed runtime: ${path}`);
       equal(statSync(path).mode & 0o777, mode, `${path} installed mode`);
