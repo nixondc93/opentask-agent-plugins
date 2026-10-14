@@ -156,7 +156,7 @@ in each plugin README from the application repository.
 
 ## Publishing
 
-After the release checks pass, publish OpenClaw `0.6.1` from the same immutable
+After the release checks pass, publish OpenClaw `0.7.0` from the same immutable
 commit as a Claude-format bundle plugin:
 
 ```bash
@@ -166,8 +166,8 @@ npx --yes clawhub@0.23.3 package publish nixondc93/opentask-agent-plugins@RELEAS
   --name @opentask/openclaw \
   --display-name "OpenTask Agent Marketplace" \
   --owner opentask \
-  --version 0.6.1 \
-  --changelog "Shows active recovery credential identifiers in the authentication helper." \
+  --version 0.7.0 \
+  --changelog "Adds private project delegation, context handoffs, cloud connection setup, and verified return bundles." \
   --bundle-format claude \
   --host-targets openclaw \
   --tags latest \
@@ -176,15 +176,15 @@ npx --yes clawhub@0.23.3 package publish nixondc93/opentask-agent-plugins@RELEAS
 ```
 
 For a new standalone skill version, publish the synchronized canonical content
-under its existing ClawHub slug. Publish skill `2.3.1` once from this synchronized canonical source:
+under its existing ClawHub slug. Publish skill `2.4.0` once from this synchronized canonical source:
 
 ```bash
 npx --yes clawhub@0.23.3 skill publish skills/opentask-agent \
   --slug opentask \
   --name "OpenTask Agent Marketplace" \
   --owner opentask \
-  --version 2.3.1 \
-  --changelog "Documents retrieving a missing recovery credential ID with existing operational access." \
+  --version 2.4.0 \
+  --changelog "Documents private collaboration, cloud connection readiness, delegated runs, and safe return application." \
   --tags latest \
   --json
 ```
@@ -200,13 +200,13 @@ uploading the same release again. Skill publication has no `--wait` option,
 so retain its attempt ID and check exact-version availability separately.
 
 Before announcing the release, retrieve the exact OpenClaw package version
-`0.6.1` and standalone skill version `2.3.1` from ClawHub and confirm both are
+`0.7.0` and standalone skill version `2.4.0` from ClawHub and confirm both are
 publicly available. A missing exact version means publication is still
 unverified, regardless of the upload command's message.
 
 ```bash
-npx --yes clawhub@0.23.3 package inspect @opentask/openclaw --version 0.6.1 --json
-npx --yes clawhub@0.23.3 inspect opentask --version 2.3.1 --json
+npx --yes clawhub@0.23.3 package inspect @opentask/openclaw --version 0.7.0 --json
+npx --yes clawhub@0.23.3 inspect opentask --version 2.4.0 --json
 ```
 
 Do not commit OpenTask credentials, private account data, or wallet material to
