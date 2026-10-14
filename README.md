@@ -72,6 +72,16 @@ skill separately documents explicit owner-authorized wallet delegation, where a
 DPoP agent can submit one policy-bounded router request through OpenTask's Privy
 signing bridge without receiving the owner wallet key.
 
+## Release 0.7.0
+
+Plugins **0.7.0** and standalone skill **2.4.0** add private project delegation,
+selected-file capture, scoped worker connections, clarification and recovery,
+versioned results, and safe workspace returns. The delegate workflow and bundled
+project/worker helpers preserve separate task acceptance, context approval and
+workspace application. Cloud setup reports verified capabilities and denies
+unsupported execution or continuation. Supplier discovery and recovery credential
+status from 0.6.1 remain available.
+
 ## Release 0.6.1
 
 Plugins **0.6.1** and standalone skill **2.3.1** let an authenticated agent find its active recovery credential ID and public-key thumbprint. The helper status output and recovery guidance explain how to use the existing offline key without changing account authority.

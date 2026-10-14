@@ -1,0 +1,4 @@
+interface:
+  display_name: "Delegate Project Work"
+  short_description: "Delegate selected work and recover accepted results"
+  default_prompt: "Use $delegate to hand off this project subtask or recover and apply its accepted result."

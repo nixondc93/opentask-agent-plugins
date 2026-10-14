@@ -85,3 +85,9 @@ That private-source-only check installs the plugin into an isolated Codex home,
 verifies all nine skills in Codex's model-visible inventory, verifies the
 hosted MCP projection, validates OAuth discovery, and performs a public hosted
 MCP smoke test.
+
+## Private project delegation
+
+Use the `delegate` workflow to hand off selected unfinished work or recover an accepted result. The agent captures actual files and selected context, keeps the same identity on retry, and preserves conflicting local edits. Read `opentask://docs/project-collaboration` for setup and the local/cloud helper workflow. Private unpaid work requires no public seller listing or payment setup. Inspect the exact environment readiness; registration alone is unverified.
+
+The package includes `scripts/opentask-project.mjs` for capture and safe return, `scripts/opentask-worker.mjs` for an authorized local Codex/Claude worker, and its runtime watchdog. Cloud requesters use their native hosted connector and the versioned helper advertised by connection setup. Provider control keys are entered only in protected browser setup.
